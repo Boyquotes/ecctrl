@@ -42,13 +42,13 @@ export default function ShotCube() {
     }
   }, [cubeMesh]);
 
-  // useEffect(() => {
-  //   window.addEventListener("click", () => clickToCreateBox());
+  useEffect(() => {
+    window.addEventListener("click", () => clickToCreateBox());
 
-  //   return () => {
-  //     window.removeEventListener("click", () => clickToCreateBox());
-  //   };
-  // }, []);
+    return () => {
+      window.removeEventListener("click", () => clickToCreateBox());
+    };
+  }, []);
 
   return (
     <>

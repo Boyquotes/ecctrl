@@ -127,29 +127,29 @@ export default function Beer() {
       console.log(voyels)
       printRandomConsonant(11)
     // }, [])
-    const fetchData = async () => {
-        // Call API
-        const response = await fetch(url,{headers: {"xc-token": "KJW6bNF5WOJtrRXCm4rSOmQ0jfdE5T89wtoehcLe"}});
-          if (!response.ok) {
-            throw new Error('Data coud not be fetched!')
-          } else {
-            console.log("response");
-            console.log(response);
-            return response.json()
-          }
-      }
+    // const fetchData = async () => {
+    //     // Call API
+    //     const response = await fetch(url,{headers: {"xc-token": "KJW6bNF5WOJtrRXCm4rSOmQ0jfdE5T89wtoehcLe"}});
+    //       if (!response.ok) {
+    //         throw new Error('Data coud not be fetched!')
+    //       } else {
+    //         console.log("response");
+    //         console.log(response);
+    //         return response.json()
+    //       }
+    //   }
       // useEffect(() => {
-        fetchData()
-          .then((res) => {
-            console.log("res");
-            console.log(res);
-            initBlog(res.list)
-          })
-          .catch((e) => {
-            console.log(e.message)
-          })
+        // fetchData()
+        //   .then((res) => {
+        //     console.log("res");
+        //     console.log(res);
+        //     initBlog(res.list)
+        //   })
+        //   .catch((e) => {
+        //     console.log(e.message)
+        //   })
       // }, [])
-  }
+    }
 
   useEffect(() => {
     // 👇️ Only runs once
@@ -249,7 +249,7 @@ export default function Beer() {
     console.log(wordSended)
     const newMesh = (
       <mesh
-        position={[2, 2 - 0.5, 2]}
+        position={[20, 2 - 0.5, 2]}
         castShadow
         receiveShadow
       >
@@ -261,19 +261,19 @@ export default function Beer() {
     return newMesh;
   };
 
-  useEffect(() => {
-    camera.parent?.getWorldDirection(direction);
-    if (cubeMesh.length > 0) {
-      cubeRef.current?.setLinvel(
-        new THREE.Vector3(
-          direction.x * 20,
-          direction.y * 20 + 2,
-          direction.z * 20
-        ),
-        false
-      );
-    }
-  }, [cubeMesh]);
+  // useEffect(() => {
+  //   camera.parent?.getWorldDirection(direction);
+  //   if (cubeMesh.length > 0) {
+  //     cubeRef.current?.setLinvel(
+  //       new THREE.Vector3(
+  //         direction.x * 20,
+  //         direction.y * 20 + 2,
+  //         direction.z * 20
+  //       ),
+  //       false
+  //     );
+  //   }
+  // }, [cubeMesh]);
 
   // console.log("blogItems av return");
   // console.log(blogItems);
@@ -304,6 +304,14 @@ export default function Beer() {
         >
           ICI
         </Text>
+        {cubeMesh.map((item, i) => {
+          console.log(cubeMesh)
+          return (
+            <RigidBody key={i} mass={0.6} ref={cubeRef}>
+              {item}
+            </RigidBody>
+          );
+        })}
         {voyels.map((voyel, _idx) => {
           // console.log(voyel)
           console.log(wordSended)
@@ -314,7 +322,8 @@ export default function Beer() {
               color="red"
               fontSize={0.5}
               // onClick={(e) => console.log('clickclick'+voyel)}
-              onClick={(e) => clickToCreateBox()}
+              // onClick={(e) => clickToCreateBox()}
+              onClick={(e) => sendLetter(voyel)}
               onPointerOver={() => setHovered(true)}
               onPointerOut={() => setHovered(false)}
             >
