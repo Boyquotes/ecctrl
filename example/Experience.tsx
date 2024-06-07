@@ -6,6 +6,7 @@ import Floor from "./Floor";
 import Lights from "./Lights";
 import Steps from "./Steps";
 import Slopes from "./Slopes";
+import Beer from "./Beer";
 import RoughPlane from "./RoughPlane";
 import RigidObjects from "./RigidObjects";
 import FloatingPlatform from "./FloatingPlatform";
@@ -14,8 +15,35 @@ import ShotCube from "./ShotCube";
 import { useControls } from "leva";
 import CharacterModel from "./CharacterModel";
 import React, { useEffect, useState } from "react";
+import { Api } from "nocodb-sdk";
 
 export default function Experience() {
+
+  // // Call API
+  // const api = new Api({
+  //   baseURL: "http://37.187.141.70:8080",
+  //   headers: {
+  //     "xc-token": "KJW6bNF5WOJtrRXCm4rSOmQ0jfdE5T89wtoehcLe"
+  //   }
+  // })
+  // api.dbViewRow.list(
+  //   "noco",
+  //   "pav146hvtf72680",
+  //   "mciuxwbs54yuoro",
+  //   "vw8zu07t9ja74uzi", {
+  //     "offset": 0,
+  //     "limit": 20,
+  //     "where": ""
+  // }).then(function (data) {
+  //   console.log(data);
+  //   console.log(data.list);
+  //   console.log(data.list[0]);
+  //   console.log(data.list[0].Title);
+  //   console.log(data.list[0].content);
+  // }).catch(function (error) {
+  //   console.error(error);
+  // });
+
   /**
    * Delay physics activate
    */
@@ -92,6 +120,8 @@ export default function Experience() {
 
         {/* Slopes and stairs */}
         <Slopes />
+        {/* Beer */}
+        <Beer />
 
         {/* Small steps */}
         <Steps />
