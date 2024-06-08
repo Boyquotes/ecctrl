@@ -113,9 +113,15 @@ export default function Beer() {
   const [voyels, initVoyels] = useState([])
   const [wordSended, initWordSended] = useState([])
   const [cubeMesh, setCubeMesh] = useState([]);
+  const [cubeText, setCubeText] = useState([]);
+  const [positionX, setPositionX] = useState(20);
   const cubeRef = useRef<RapierRigidBody>();
   const position = useMemo(() => new THREE.Vector3(), []);
   const direction = useMemo(() => new THREE.Vector3(), []);
+  const listener = new THREE.AudioListener();
+  const sound = new THREE.Audio( listener );
+  const audioLoader = new THREE.AudioLoader();
+
 
   function MyComponent() {
     // useEffect(() => {
@@ -243,21 +249,45 @@ export default function Beer() {
     }
   };
 
-  const sendLetter = (letter) => {
+  const sendLetter = (letter, positionX) => {
     console.log('click send 1 '+letter)
     initWordSended(wordSended => [...wordSended, letter])
     console.log(wordSended)
     const newMesh = (
       <mesh
-        position={[20, 2 - 0.5, 2]}
+        position={[positionX, 1, -6]}
         castShadow
         receiveShadow
       >
-        <boxGeometry args={[0.5, 0.5, 0.5]} />
+        <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="orange" />
       </mesh>
     );
+    const newText = (
+      <Text
+      rotation={[0, Math.PI, 0]}
+      position={[positionX, -0.5, -6.51]}
+      color="green"
+      fontSize={0.5}
+      // onClick={(e) => console.log('clickclick'+voyel)}
+      // onClick={(e) => clickToCreateBox()}
+      // onClick={(e) => sendLetter(voyel, positionX)}
+      // onPointerOver={() => setHovered(true)}
+      // onPointerOut={() => setHovered(false)}
+    >
+      TTs
+    </Text>
+    );
     setCubeMesh((prevMeshes) => [...prevMeshes, newMesh]);
+    setCubeText((prevMeshes) => [...prevMeshes, newText]);
+    setPositionX(positionX-1.5);
+    // audioLoader.load( 'sound.ogg', function( buffer ) {
+    audioLoader.load( 'putDown.wav', function( buffer ) {
+      sound.setBuffer( buffer );
+      sound.setLoop( false );
+      sound.setVolume( 0.5 );
+      sound.play();
+    });
     return newMesh;
   };
 
@@ -307,6 +337,14 @@ export default function Beer() {
         {cubeMesh.map((item, i) => {
           console.log(cubeMesh)
           return (
+            <RigidBody key={i}>
+              {item}
+            </RigidBody>
+          );
+        })}
+        {cubeText.map((item, i) => {
+          console.log(cubeText)
+          return (
             <RigidBody key={i} mass={0.6} ref={cubeRef}>
               {item}
             </RigidBody>
@@ -323,7 +361,7 @@ export default function Beer() {
               fontSize={0.5}
               // onClick={(e) => console.log('clickclick'+voyel)}
               // onClick={(e) => clickToCreateBox()}
-              onClick={(e) => sendLetter(voyel)}
+              onClick={(e) => sendLetter(voyel, positionX)}
               onPointerOver={() => setHovered(true)}
               onPointerOut={() => setHovered(false)}
             >
