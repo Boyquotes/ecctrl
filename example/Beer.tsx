@@ -11,18 +11,6 @@ import allEnglishWords from '../public/words.txt';
 // console.log(words);
 console.log(allEnglishWords)
 
-fetch(allEnglishWords)
- .then(r => r.text())
- .then(text => {
-  console.log('text decoded:', text);
-  var arraycontainsturtles = (text.indexOf("houseboating") > -1);
-  console.log("FIND "+arraycontainsturtles);
-  var arraycontainsturtles2 = text.includes("houseboating");
-  console.log("FIND2 "+arraycontainsturtles2);
-});
-
-
-
 export function printAlphabet(): string[] {
   const ENGLISH = 'abcdefghijklmnopqrstuvwxyz'.split(''); // [a,b,c,d,...]
   console.log(ENGLISH)
@@ -127,6 +115,7 @@ export default function Beer() {
   var url = "http://37.187.141.70:8080/api/v2/tables/mciuxwbs54yuoro/records?offset=0&limit=25&where=&viewId=vw8zu07t9ja74uzi";
 
   const [voyels, initVoyels] = useState([])
+  const [consonants, initConsonant] = useState([])
   const [wordSended, initWordSended] = useState([])
   const [cubeMesh, setCubeMesh] = useState([]);
   const [cubeText, setCubeText] = useState([]);
@@ -138,15 +127,18 @@ export default function Beer() {
   const listener = new THREE.AudioListener();
   const sound = new THREE.Audio( listener );
   const audioLoader = new THREE.AudioLoader();
-
+  const [textEnglish, setTextEnglish] = useState('age');
 
   function MyComponent() {
     // useEffect(() => {
-      let voy = printRandomVowels(4)
+      let voy = printRandomVowels(4);
+      let conson = printRandomConsonant(11);
       console.log("voy")
       console.log(voy)
+      console.log("con")
+      console.log(conson)
       initVoyels(voy)
-
+      initConsonant(conson);
       console.log(voyels)
       printRandomConsonant(11)
     // }, [])
@@ -267,23 +259,33 @@ export default function Beer() {
   };
 
   const sendWord = (word) => {
-    console.log("word")
-    console.log(word)
-    console.log(word.wordSended)
-    var result = Object.keys(word).map((key) => [key, word[key]]);
-    console.log(result)
-    // console.log(word.join(''))
-    let completeWord = word.wordSended.reduce((prev,curr) => {
-        if (curr === '') {
-            prev.push('');
-        } else {
-            prev[prev.length - 1] += curr;
-        }
-        // console.log(prev)
-        return prev;
-      }, [''])
-    console.log(completeWord)
-    console.log(completeWord[0])
+      fetch(allEnglishWords)
+      .then(r => r.text())
+      .then(text => {
+        console.log('text decoded:', text);
+        setTextEnglish(text);
+        // var arraycontainsturtles = (text.indexOf("eee") > -1);
+        // console.log("FIND "+arraycontainsturtles);
+        console.log("word")
+        console.log(word)
+        console.log(word.wordSended)
+        var result = Object.keys(word).map((key) => [key, word[key]]);
+        console.log(result)
+        // console.log(word.join(''))
+        let completeWord = word.wordSended.reduce((prev,curr) => {
+            if (curr === '') {
+                prev.push('');
+            } else {
+                prev[prev.length - 1] += curr;
+            }
+            // console.log(prev)
+            return prev;
+          }, [''])
+        console.log(completeWord)
+        console.log(completeWord[0])
+        var arraycontainsturtles2 = text.includes(completeWord[0]);
+        console.log("FIND2 "+arraycontainsturtles2);
+      });
   }
 
   const sendLetter = (letter, positionX) => {
@@ -419,6 +421,26 @@ export default function Beer() {
             //     console.log("Not last one")
             // }
         })} */}
+
+        {consonants.map((voyel, _idx) => {
+          // console.log(voyel)
+          console.log(wordSended)
+          return <>
+            <Text
+              rotation={[0, Math.PI, 0]}
+              position={[3, 4+_idx, 0]}
+              color="red"
+              fontSize={0.5}
+              // onClick={(e) => console.log('clickclick'+voyel)}
+              // onClick={(e) => clickToCreateBox()}
+              onClick={(e) => sendLetter(voyel, positionX)}
+              onPointerOver={() => setHovered(true)}
+              onPointerOut={() => setHovered(false)}
+            >
+              {voyel}
+            </Text>
+          </>;
+        })}
 
         {voyels.map((voyel, _idx) => {
           // console.log(voyel)
