@@ -6,6 +6,22 @@ import { Api } from "nocodb-sdk";
 import * as React from 'react';
 import { useRef, useMemo, useState, useEffect } from "react";
 import ShotCube from "./ShotCube";
+import allEnglishWords from '../public/words.txt';
+// const words = fs.readFileSync('words.txt','utf8').split('\n');
+// console.log(words);
+console.log(allEnglishWords)
+
+fetch(allEnglishWords)
+ .then(r => r.text())
+ .then(text => {
+  console.log('text decoded:', text);
+  var arraycontainsturtles = (text.indexOf("houseboating") > -1);
+  console.log("FIND "+arraycontainsturtles);
+  var arraycontainsturtles2 = text.includes("houseboating");
+  console.log("FIND2 "+arraycontainsturtles2);
+});
+
+
 
 export function printAlphabet(): string[] {
   const ENGLISH = 'abcdefghijklmnopqrstuvwxyz'.split(''); // [a,b,c,d,...]
@@ -81,31 +97,31 @@ export default function Beer() {
   // ]
   // );
 
-  const clickToCreateBox = () => {
-      camera.parent?.getWorldPosition(position);
-      const newMesh = (
-        <mesh
-          position={[position.x, position.y - 0.5, position.z]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[0.5, 0.5, 0.5]} />
-          <meshStandardMaterial color="orange" />
-        </mesh>
-      );
-      setCubeMesh((prevMeshes) => [...prevMeshes, newMesh]);
-      return (
-        <>
-          {cubeMesh.map((item, i) => {
-            return (
-              <RigidBody key={i} mass={0.6} ref={cubeRef}>
-                {item}
-              </RigidBody>
-            );
-          })}
-        </>
-      );
-    };
+  // const clickToCreateBox = () => {
+  //     camera.parent?.getWorldPosition(position);
+  //     const newMesh = (
+  //       <mesh
+  //         position={[position.x, position.y - 0.5, position.z]}
+  //         castShadow
+  //         receiveShadow
+  //       >
+  //         <boxGeometry args={[0.5, 0.5, 0.5]} />
+  //         <meshStandardMaterial color="orange" />
+  //       </mesh>
+  //     );
+  //     setCubeMesh((prevMeshes) => [...prevMeshes, newMesh]);
+  //     return (
+  //       <>
+  //         {cubeMesh.map((item, i) => {
+  //           return (
+  //             <RigidBody key={i} mass={0.6} ref={cubeRef}>
+  //               {item}
+  //             </RigidBody>
+  //           );
+  //         })}
+  //       </>
+  //     );
+  //   };
 
 
   var url = "http://37.187.141.70:8080/api/v2/tables/mciuxwbs54yuoro/records?offset=0&limit=25&where=&viewId=vw8zu07t9ja74uzi";
@@ -114,7 +130,8 @@ export default function Beer() {
   const [wordSended, initWordSended] = useState([])
   const [cubeMesh, setCubeMesh] = useState([]);
   const [cubeText, setCubeText] = useState([]);
-  const [positionX, setPositionX] = useState(20);
+  const [cubeRigid, setCubeRigid] = useState([]);
+  const [positionX, setPositionX] = useState(5);
   const cubeRef = useRef<RapierRigidBody>();
   const position = useMemo(() => new THREE.Vector3(), []);
   const direction = useMemo(() => new THREE.Vector3(), []);
@@ -249,10 +266,32 @@ export default function Beer() {
     }
   };
 
+  const sendWord = (word) => {
+    console.log("word")
+    console.log(word)
+    console.log(word.wordSended)
+    var result = Object.keys(word).map((key) => [key, word[key]]);
+    console.log(result)
+    // console.log(word.join(''))
+    let completeWord = word.wordSended.reduce((prev,curr) => {
+        if (curr === '') {
+            prev.push('');
+        } else {
+            prev[prev.length - 1] += curr;
+        }
+        // console.log(prev)
+        return prev;
+      }, [''])
+    console.log(completeWord)
+    console.log(completeWord[0])
+  }
+
   const sendLetter = (letter, positionX) => {
     console.log('click send 1 '+letter)
     initWordSended(wordSended => [...wordSended, letter])
     console.log(wordSended)
+    console.log(wordSended.length)
+
     const newMesh = (
       <mesh
         position={[positionX, 1, -6]}
@@ -260,27 +299,37 @@ export default function Beer() {
         receiveShadow
       >
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="orange" />
+        <meshStandardMaterial color="red" />
       </mesh>
     );
     const newText = (
       <Text
       rotation={[0, Math.PI, 0]}
-      position={[positionX, -0.5, -6.51]}
+      position={[positionX, 1, -6.51]}
       color="green"
       fontSize={0.5}
+      textAlign="center"
+      // position={[0, 1.5, 0]}
       // onClick={(e) => console.log('clickclick'+voyel)}
       // onClick={(e) => clickToCreateBox()}
       // onClick={(e) => sendLetter(voyel, positionX)}
       // onPointerOver={() => setHovered(true)}
       // onPointerOut={() => setHovered(false)}
     >
-      TTs
+      {letter}
     </Text>
     );
+    const newRigidB = (
+      <RigidBody mass={100} key={wordSended.length}>
+        {newText}
+        {newMesh}
+      </RigidBody>
+    )
+
+    setCubeRigid((prevRigids) => [...prevRigids, newRigidB]);
     setCubeMesh((prevMeshes) => [...prevMeshes, newMesh]);
     setCubeText((prevMeshes) => [...prevMeshes, newText]);
-    setPositionX(positionX-1.5);
+    setPositionX(positionX-1.3);
     // audioLoader.load( 'sound.ogg', function( buffer ) {
     audioLoader.load( 'putDown.wav', function( buffer ) {
       sound.setBuffer( buffer );
@@ -288,7 +337,7 @@ export default function Beer() {
       sound.setVolume( 0.5 );
       sound.play();
     });
-    return newMesh;
+    return newRigidB;
   };
 
   // useEffect(() => {
@@ -322,7 +371,7 @@ export default function Beer() {
     }, [hovered])
 
     return (
-      <group position={[-20, 0, 10]}>
+      <group position={[0, 0, 10]}>
         <RigidBody type="fixed" colliders="trimesh" rotation={[0, Math.PI, 0]}>
           <primitive object={beer.scene} />
         </RigidBody>
@@ -334,29 +383,50 @@ export default function Beer() {
         >
           ICI
         </Text>
-        {cubeMesh.map((item, i) => {
-          console.log(cubeMesh)
-          return (
-            <RigidBody key={i}>
-              {item}
-            </RigidBody>
-          );
+        {cubeRigid.map((item, i, arr) => {
+          // if (arr.length - 1 === i) {
+            console.log(cubeMesh)
+            return (
+              <>
+                {item}
+              </>
+              // <RigidBody key={i}>
+              //   <Text
+              //     scale={0.5}
+              //     color="black"
+              //     maxWidth={10}
+              //     textAlign="center"
+              //     position={[0, 1.5, 0]}
+              //   >
+              //   LETTEERRRR
+              //   </Text>
+              // {item}
+              // </RigidBody>
+            );
+          // }
         })}
-        {cubeText.map((item, i) => {
+
+        {/* {cubeText.map((item2, i2, arr2) => {
           console.log(cubeText)
-          return (
-            <RigidBody key={i} mass={0.6} ref={cubeRef}>
-              {item}
-            </RigidBody>
-          );
-        })}
+            // if (arr2.length - 1 === i2) {
+              return (
+                <RigidBody key={i2}>
+                  {item2}
+                </RigidBody>
+              );
+            // }
+            // } else {
+            //     console.log("Not last one")
+            // }
+        })} */}
+
         {voyels.map((voyel, _idx) => {
           // console.log(voyel)
           console.log(wordSended)
           return <>
             <Text
               rotation={[0, Math.PI, 0]}
-              position={[15, 4+_idx, 0]}
+              position={[0, 4+_idx, 0]}
               color="red"
               fontSize={0.5}
               // onClick={(e) => console.log('clickclick'+voyel)}
@@ -367,7 +437,7 @@ export default function Beer() {
             >
               {voyel}
             </Text>
-            <RigidBody position={[15, 1, 2]}>
+            <RigidBody position={[0, 1, 2]}>
               <Text
                 scale={0.5}
                 color="black"
@@ -381,7 +451,7 @@ export default function Beer() {
                 <boxGeometry args={[0.5, 0.5, 0.5]} />
                 <meshStandardMaterial color={"lightsteelblue"} />
               </mesh>
-          </RigidBody>
+            </RigidBody>
           </>;
         })}
         {/* <ShotCube /> */}
@@ -400,6 +470,25 @@ export default function Beer() {
         title : {item.Title}
       </Text>;
       })} */}
+
+            <group position={[-3, 1, -10]} onClick={(e) => sendWord({wordSended})}>
+              <Text
+                scale={0.5}
+                color="black"
+                maxWidth={10}
+                textAlign="center"
+                position={[0, 1, 0]}
+                rotation={[0, Math.PI/1.4, 0]}
+              >
+              Submit Word
+              </Text>
+              <mesh receiveShadow castShadow>
+                <boxGeometry args={[0.5, 0.5, 0.5]} />
+                <meshStandardMaterial color={"lightsteelblue"} />
+              </mesh>
+            </group>  
+
+
       </group>
     );
   
