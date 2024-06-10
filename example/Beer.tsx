@@ -7,6 +7,8 @@ import * as React from 'react';
 import { useRef, useMemo, useState, useEffect } from "react";
 import ShotCube from "./ShotCube";
 import allEnglishWords from '../public/words.txt';
+import { log } from "three/examples/jsm/nodes/Nodes.js";
+// import allEnglishWords from '../public/example.txt';
 // const words = fs.readFileSync('words.txt','utf8').split('\n');
 // console.log(words);
 console.log(allEnglishWords)
@@ -128,11 +130,20 @@ export default function Beer() {
   const sound = new THREE.Audio( listener );
   const audioLoader = new THREE.AudioLoader();
   const [textEnglish, setTextEnglish] = useState('age');
+  const [cubeSuccess, setCubeSuccess] = useState([]);
+
+  const deleteItem = (index) => {
+    const newArray = [
+      ...cubeRigid.slice(0, index), // Elements before the one to delete
+      ...cubeRigid.slice(index + 1) // Elements after the one to delete
+    ];
+    setCubeRigid(newArray);
+  };
 
   function MyComponent() {
     // useEffect(() => {
       let voy = printRandomVowels(4);
-      let conson = printRandomConsonant(11);
+      let conson = printRandomConsonant(19);
       console.log("voy")
       console.log(voy)
       console.log("con")
@@ -258,12 +269,24 @@ export default function Beer() {
     }
   };
 
+  const removeLastLetter = () => {
+    console.log("letter");
+    console.log(cubeRigid[cubeRigid.length-1])
+    let lastCube = cubeRigid[cubeRigid.length-1];
+    // cubeRigid[cubeRigid.length-1])
+    // cubeRigid[cubeRigid.length-1] = null;
+    deleteItem(cubeRigid.length-1);
+  }
+
   const sendWord = (word) => {
       fetch(allEnglishWords)
       .then(r => r.text())
       .then(text => {
         console.log('text decoded:', text);
         setTextEnglish(text);
+        
+        // word="house";
+
         // var arraycontainsturtles = (text.indexOf("eee") > -1);
         // console.log("FIND "+arraycontainsturtles);
         console.log("word")
@@ -272,6 +295,8 @@ export default function Beer() {
         var result = Object.keys(word).map((key) => [key, word[key]]);
         console.log(result)
         // console.log(word.join(''))
+
+
         let completeWord = word.wordSended.reduce((prev,curr) => {
             if (curr === '') {
                 prev.push('');
@@ -283,8 +308,58 @@ export default function Beer() {
           }, [''])
         console.log(completeWord)
         console.log(completeWord[0])
-        var arraycontainsturtles2 = text.includes(completeWord[0]);
-        console.log("FIND2 "+arraycontainsturtles2);
+
+
+        // .some(w => w.startsWith(word) && w === word)
+        const lines = text.split('\n');
+        console.log("lines")
+        console.log(lines)
+        const matches = lines.filter(line =>
+          line.split(' ').some(w => w.startsWith(completeWord[0]) && w === completeWord[0])
+        );
+        console.log("matches");
+        console.log(matches);
+        console.log(matches.length);
+        if(matches.length){
+          const newMesh = (
+            <mesh
+              position={[positionX, 1, -6]}
+              castShadow
+              receiveShadow
+            >
+              <boxGeometry args={[1, 1, 1]} />
+              <meshStandardMaterial color="green" />
+            </mesh>
+          );
+          audioLoader.load( 'youwin.wav', function( buffer ) {
+            sound.setBuffer( buffer );
+            sound.setLoop( false );
+            sound.setVolume( 0.5 );
+            sound.play();
+          });
+          setCubeSuccess(newMesh);
+        }
+        else{
+          const newMesh = (
+            <mesh
+              position={[positionX, 1, -6]}
+              castShadow
+              receiveShadow
+            >
+              <boxGeometry args={[1, 1, 1]} />
+              <meshStandardMaterial color="red" />
+            </mesh>
+          );
+          audioLoader.load( 'wrong.wav', function( buffer ) {
+            sound.setBuffer( buffer );
+            sound.setLoop( false );
+            sound.setVolume( 0.5 );
+            sound.play();
+          });
+          setCubeSuccess(newMesh);
+        }
+        // var arraycontainsturtles2 = text.includes(completeWord[0]);
+        // console.log("FIND2 "+arraycontainsturtles2);
       });
   }
 
@@ -301,7 +376,7 @@ export default function Beer() {
         receiveShadow
       >
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="red" />
+        <meshStandardMaterial color="orange" />
       </mesh>
     );
     const newText = (
@@ -377,13 +452,14 @@ export default function Beer() {
         <RigidBody type="fixed" colliders="trimesh" rotation={[0, Math.PI, 0]}>
           <primitive object={beer.scene} />
         </RigidBody>
-          <Text
+        <Text
           rotation={[0, Math.PI, 0]}
           position={[-3.5, 7, 0]}
           color="black"
           fontSize={0.5}
+          onClick={(e) => removeLastLetter()}
         >
-          ICI
+          Remove
         </Text>
         {cubeRigid.map((item, i, arr) => {
           // if (arr.length - 1 === i) {
@@ -407,7 +483,7 @@ export default function Beer() {
             );
           // }
         })}
-
+        {cubeSuccess}
         {/* {cubeText.map((item2, i2, arr2) => {
           console.log(cubeText)
             // if (arr2.length - 1 === i2) {
@@ -428,7 +504,7 @@ export default function Beer() {
           return <>
             <Text
               rotation={[0, Math.PI, 0]}
-              position={[3, 4+_idx, 0]}
+              position={[3+_idx, 4, 0]}
               color="red"
               fontSize={0.5}
               // onClick={(e) => console.log('clickclick'+voyel)}
@@ -448,7 +524,7 @@ export default function Beer() {
           return <>
             <Text
               rotation={[0, Math.PI, 0]}
-              position={[0, 4+_idx, 0]}
+              position={[0-_idx, 4, 0]}
               color="red"
               fontSize={0.5}
               // onClick={(e) => console.log('clickclick'+voyel)}
@@ -459,21 +535,6 @@ export default function Beer() {
             >
               {voyel}
             </Text>
-            <RigidBody position={[0, 1, 2]}>
-              <Text
-                scale={0.5}
-                color="black"
-                maxWidth={10}
-                textAlign="center"
-                position={[0, 1.5, 0]}
-              >
-              LETTEERRRR
-              </Text>
-              <mesh receiveShadow castShadow>
-                <boxGeometry args={[0.5, 0.5, 0.5]} />
-                <meshStandardMaterial color={"lightsteelblue"} />
-              </mesh>
-            </RigidBody>
           </>;
         })}
         {/* <ShotCube /> */}
