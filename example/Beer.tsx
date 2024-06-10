@@ -130,7 +130,7 @@ export default function Beer() {
   const sound = new THREE.Audio( listener );
   const audioLoader = new THREE.AudioLoader();
   const [textEnglish, setTextEnglish] = useState('age');
-  const [cubeSuccess, setCubeSuccess] = useState([]);
+  const [cubeSuccess, setCubeVerify] = useState([]);
 
   const deleteItem = (index) => {
     const newArray = [
@@ -326,14 +326,14 @@ export default function Beer() {
         console.log("matches");
         console.log(matches);
         console.log(matches.length);
-        if(matches.length){
+        if(matches.length > 0 && matches != ''){
           const newMesh = (
             <mesh
-              position={[positionX, 1, -6]}
+              position={[positionX, 3, -6]}
               castShadow
               receiveShadow
             >
-              <boxGeometry args={[1, 1, 1]} />
+              <boxGeometry args={[3, 1, 1]} />
               <meshStandardMaterial color="green" />
             </mesh>
           );
@@ -343,16 +343,16 @@ export default function Beer() {
             sound.setVolume( 0.5 );
             sound.play();
           });
-          setCubeSuccess(newMesh);
+          setCubeVerify(newMesh);
         }
         else{
           const newMesh = (
             <mesh
-              position={[positionX, 1, -6]}
+              position={[positionX, 3, -6]}
               castShadow
               receiveShadow
             >
-              <boxGeometry args={[1, 1, 1]} />
+              <boxGeometry args={[3, 1, 1]} />
               <meshStandardMaterial color="red" />
             </mesh>
           );
@@ -362,7 +362,7 @@ export default function Beer() {
             sound.setVolume( 0.5 );
             sound.play();
           });
-          setCubeSuccess(newMesh);
+          setCubeVerify(newMesh);
         }
         // var arraycontainsturtles2 = text.includes(completeWord[0]);
         // console.log("FIND2 "+arraycontainsturtles2);
