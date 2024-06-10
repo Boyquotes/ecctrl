@@ -118,7 +118,7 @@ export default function Beer() {
 
   const [voyels, initVoyels] = useState([])
   const [consonants, initConsonant] = useState([])
-  const [wordSended, initWordSended] = useState([])
+  const [wordSended, setWordSended] = useState([])
   const [cubeMesh, setCubeMesh] = useState([]);
   const [cubeText, setCubeText] = useState([]);
   const [cubeRigid, setCubeRigid] = useState([]);
@@ -142,7 +142,7 @@ export default function Beer() {
 
   function MyComponent() {
     // useEffect(() => {
-      let voy = printRandomVowels(4);
+      let voy = printRandomVowels(6);
       let conson = printRandomConsonant(19);
       console.log("voy")
       console.log(voy)
@@ -276,6 +276,12 @@ export default function Beer() {
     // cubeRigid[cubeRigid.length-1])
     // cubeRigid[cubeRigid.length-1] = null;
     deleteItem(cubeRigid.length-1);
+    const newArray = [
+      ...wordSended.slice(0, wordSended.length-1), // Elements before the one to delete
+      ...wordSended.slice(wordSended.length-1 + 1) // Elements after the one to delete
+    ];
+    setWordSended(newArray);
+    setPositionX(positionX+1.3);
   }
 
   const sendWord = (word) => {
@@ -315,7 +321,7 @@ export default function Beer() {
         console.log("lines")
         console.log(lines)
         const matches = lines.filter(line =>
-          line.split(' ').some(w => w.startsWith(completeWord[0]) && w === completeWord[0])
+          line.split(' ').some(w => w.toLowerCase().startsWith(completeWord[0]) && w.toLowerCase() === completeWord[0])
         );
         console.log("matches");
         console.log(matches);
@@ -365,7 +371,7 @@ export default function Beer() {
 
   const sendLetter = (letter, positionX) => {
     console.log('click send 1 '+letter)
-    initWordSended(wordSended => [...wordSended, letter])
+    setWordSended(wordSended => [...wordSended, letter])
     console.log(wordSended)
     console.log(wordSended.length)
 
