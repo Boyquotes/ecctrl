@@ -1,5 +1,7 @@
 FROM --platform=linux/amd64 node:22
 
+RUN apt update
+RUN apt install -y xdg-utils
 # Create app directory
 WORKDIR /usr/src/app
 
@@ -8,6 +10,5 @@ WORKDIR /usr/src/app
 # where available (npm@5+)
 COPY . .
 
-EXPOSE 3001
-
-CMD ["tail", "-f", "/dev/null"]
+EXPOSE 5173
+CMD ["npm", "run", "dev"]

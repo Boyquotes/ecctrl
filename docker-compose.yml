@@ -7,11 +7,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    command: npm run dev
     restart: always
     volumes:
       - ./:/usr/src/app
     ports:
-      - "3001:3001"
+      - "3001:5173"
   theia:
     image: elswork/theia
     restart: always
