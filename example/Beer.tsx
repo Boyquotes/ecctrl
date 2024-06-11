@@ -116,6 +116,9 @@ export default function Beer() {
 
   var url = "http://37.187.141.70:8080/api/v2/tables/mciuxwbs54yuoro/records?offset=0&limit=25&where=&viewId=vw8zu07t9ja74uzi";
 
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
   const [voyels, initVoyels] = useState([])
   const [consonants, initConsonant] = useState([])
   const [wordSended, setWordSended] = useState([])
@@ -139,6 +142,41 @@ export default function Beer() {
     ];
     setCubeRigid(newArray);
   };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(allEnglishWords)
+            .then(r => r.text())
+            .then(text => {
+                console.log('text decoded:', text);
+                setTextEnglish(text);
+                return text; // Supposons que ceci est un calcul coûteux
+            })
+        setData(response);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const memoizedData = useMemo(() => {
+    if (data) {
+      // Example transformation: filtering the data
+      console.log(data);
+      const lines = data.split('\n');
+      console.log("lines")
+      console.log(lines)
+      return lines;
+    }
+    return [];
+  }, [data]);
+
 
   function MyComponent() {
     // useEffect(() => {
@@ -285,88 +323,141 @@ export default function Beer() {
   }
 
   const sendWord = (word) => {
-      fetch(allEnglishWords)
-      .then(r => r.text())
-      .then(text => {
-        console.log('text decoded:', text);
-        setTextEnglish(text);
-        
-        // word="house";
+    console.log("word")
+    console.log(word)
+    console.log(word.wordSended)
+    let completeWord = word.wordSended.reduce((prev,curr) => {
+        if (curr === '') {
+            prev.push('');
+        } else {
+            prev[prev.length - 1] += curr;
+        }
+        // console.log(prev)
+        return prev;
+    }, [''])
+    console.log(completeWord)
+    console.log(completeWord[0])
 
-        // var arraycontainsturtles = (text.indexOf("eee") > -1);
-        // console.log("FIND "+arraycontainsturtles);
-        console.log("word")
-        console.log(word)
-        console.log(word.wordSended)
-        var result = Object.keys(word).map((key) => [key, word[key]]);
-        console.log(result)
-        // console.log(word.join(''))
-
-
-        let completeWord = word.wordSended.reduce((prev,curr) => {
-            if (curr === '') {
-                prev.push('');
-            } else {
-                prev[prev.length - 1] += curr;
-            }
-            // console.log(prev)
-            return prev;
-          }, [''])
-        console.log(completeWord)
-        console.log(completeWord[0])
-
-
-        // .some(w => w.startsWith(word) && w === word)
-        const lines = text.split('\n');
-        console.log("lines")
-        console.log(lines)
-        const matches = lines.filter(line =>
-          line.split(' ').some(w => w.toLowerCase().startsWith(completeWord[0]) && w.toLowerCase() === completeWord[0])
+    if(completeWord[0].length < 2){
+        const newMesh = (
+        <mesh
+            position={[positionX, 3, -6]}
+            castShadow
+            receiveShadow
+        >
+            <boxGeometry args={[3, 1, 1]} />
+            <meshStandardMaterial color="yellow" />
+        </mesh>
         );
-        console.log("matches");
-        console.log(matches);
-        console.log(matches.length);
-        if(matches.length > 0 && matches != ''){
-          const newMesh = (
-            <mesh
-              position={[positionX, 3, -6]}
-              castShadow
-              receiveShadow
-            >
-              <boxGeometry args={[3, 1, 1]} />
-              <meshStandardMaterial color="green" />
-            </mesh>
-          );
-          audioLoader.load( 'youwin.wav', function( buffer ) {
-            sound.setBuffer( buffer );
-            sound.setLoop( false );
-            sound.setVolume( 0.5 );
-            sound.play();
-          });
-          setCubeVerify(newMesh);
-        }
-        else{
-          const newMesh = (
-            <mesh
-              position={[positionX, 3, -6]}
-              castShadow
-              receiveShadow
-            >
-              <boxGeometry args={[3, 1, 1]} />
-              <meshStandardMaterial color="red" />
-            </mesh>
-          );
-          audioLoader.load( 'wrong.wav', function( buffer ) {
-            sound.setBuffer( buffer );
-            sound.setLoop( false );
-            sound.setVolume( 0.5 );
-            sound.play();
-          });
-          setCubeVerify(newMesh);
-        }
-        // var arraycontainsturtles2 = text.includes(completeWord[0]);
-        // console.log("FIND2 "+arraycontainsturtles2);
-      });
+        audioLoader.load( 'youwin.wav', function( buffer ) {
+        sound.setBuffer( buffer );
+        sound.setLoop( false );
+        sound.setVolume( 0.5 );
+        sound.play();
+        });
+        setCubeVerify(newMesh);
+    }
+    else{
+        // const expensiveValue = useMemo(() => {
+        //     console.log('Calculating expensive value...');
+        //     fetch(allEnglishWords)
+        //     .then(r => r.text())
+        //     .then(text => {
+        //         console.log('text decoded:', text);
+        //         setTextEnglish(text);
+        //         return text; // Supposons que ceci est un calcul coûteux
+        //     })
+        // }, []);
+
+        const newMesh = (
+        <mesh
+            position={[positionX, 3, -6]}
+            castShadow
+            receiveShadow
+        >
+            <boxGeometry args={[3, 1, 1]} />
+            <meshStandardMaterial color="purple" />
+        </mesh>
+        );
+        audioLoader.load( 'youwin.wav', function( buffer ) {
+        sound.setBuffer( buffer );
+        sound.setLoop( false );
+        sound.setVolume( 0.5 );
+        sound.play();
+        });
+        setCubeVerify(newMesh);
+
+        // fetch(allEnglishWords)
+        // .then(r => r.text())
+        // .then(text => {
+        //     console.log('text decoded:', text);
+        //     setTextEnglish(text);
+            
+        //     // word="house";
+
+        //     // var arraycontainsturtles = (text.indexOf("eee") > -1);
+        //     // console.log("FIND "+arraycontainsturtles);
+        //     // var result = Object.keys(word).map((key) => [key, word[key]]);
+        //     // console.log(result)
+        //     // console.log(word.join(''))
+
+
+        //     // .some(w => w.startsWith(word) && w === word)
+
+        //     const lines = text.split('\n');
+        //     console.log("lines")
+        //     console.log(lines)
+        //     // let linesSplit = line.split(' ');
+        //     // console.log(linesSplit);
+        //     // console.log("linesSplit");
+            const matches = memoizedData.filter(line =>
+            line.split(' ').some(w => w.toLowerCase().startsWith(completeWord[0]) && w.toLowerCase() === completeWord[0])
+            );
+            // const matches=["house"];
+            console.log("matches");
+            console.log(matches);
+            console.log(matches.length);
+            if(matches.length > 0 && matches != ''){
+                const newMesh = (
+                    <mesh
+                    position={[positionX, 3, -6]}
+                    castShadow
+                    receiveShadow
+                    >
+                    <boxGeometry args={[3, 1, 1]} />
+                    <meshStandardMaterial color="green" />
+                    </mesh>
+                );
+                audioLoader.load( 'youwin.wav', function( buffer ) {
+                    sound.setBuffer( buffer );
+                    sound.setLoop( false );
+                    sound.setVolume( 0.5 );
+                    sound.play();
+                });
+                setCubeVerify(newMesh);
+            }
+            else{
+                const newMesh = (
+                    <mesh
+                    position={[positionX, 3, -6]}
+                    castShadow
+                    receiveShadow
+                    >
+                    <boxGeometry args={[3, 1, 1]} />
+                    <meshStandardMaterial color="red" />
+                    </mesh>
+                );
+                audioLoader.load( 'wrong.wav', function( buffer ) {
+                    sound.setBuffer( buffer );
+                    sound.setLoop( false );
+                    sound.setVolume( 0.5 );
+                    sound.play();
+                });
+                setCubeVerify(newMesh);
+            // var arraycontainsturtles2 = text.includes(completeWord[0]);
+            // console.log("FIND2 "+arraycontainsturtles2);
+            }
+    };
   }
 
   const sendLetter = (letter, positionX) => {
