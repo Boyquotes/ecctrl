@@ -1,11 +1,13 @@
+import { extend } from '@react-three/fiber'
 import { RigidBody } from "@react-three/rapier";
 import { useGLTF, Text } from "@react-three/drei";
 import * as THREE from "three";
-import { useThree } from "@react-three/fiber";
+import { useThree, Canvas } from "@react-three/fiber";
 import { Api } from "nocodb-sdk";
 import * as React from 'react';
 import { useRef, useMemo, useState, useEffect } from "react";
 import ShotCube from "./ShotCube";
+import CountDown from "./CountDown";
 import allEnglishWords from '../public/words.txt';
 import { log } from "three/examples/jsm/nodes/Nodes.js";
 // import allEnglishWords from '../public/example.txt';
@@ -369,23 +371,23 @@ export default function Beer() {
         //     })
         // }, []);
 
-        const newMesh = (
-        <mesh
-            position={[positionX, 3, -6]}
-            castShadow
-            receiveShadow
-        >
-            <boxGeometry args={[3, 1, 1]} />
-            <meshStandardMaterial color="purple" />
-        </mesh>
-        );
-        audioLoader.load( 'youwin.wav', function( buffer ) {
-        sound.setBuffer( buffer );
-        sound.setLoop( false );
-        sound.setVolume( 0.5 );
-        sound.play();
-        });
-        setCubeVerify(newMesh);
+        // const newMesh = (
+        // <mesh
+        //     position={[positionX, 3, -6]}
+        //     castShadow
+        //     receiveShadow
+        // >
+        //     <boxGeometry args={[3, 1, 1]} />
+        //     <meshStandardMaterial color="purple" />
+        // </mesh>
+        // );
+        // audioLoader.load( 'youwin.wav', function( buffer ) {
+        // sound.setBuffer( buffer );
+        // sound.setLoop( false );
+        // sound.setVolume( 0.5 );
+        // sound.play();
+        // });
+        // setCubeVerify(newMesh);
 
         // fetch(allEnglishWords)
         // .then(r => r.text())
@@ -666,10 +668,9 @@ export default function Beer() {
                 <boxGeometry args={[0.5, 0.5, 0.5]} />
                 <meshStandardMaterial color={"lightsteelblue"} />
               </mesh>
-            </group>  
-
-
+            </group>
+      <CountDown />
       </group>
-    );
+);
   
 }
