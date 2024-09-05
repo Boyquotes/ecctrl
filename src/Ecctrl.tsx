@@ -9,7 +9,7 @@ import {
   type RigidBodyProps,
   CylinderCollider,
 } from "@react-three/rapier";
-import { useEffect, useRef, useMemo, type ReactNode, forwardRef, type ForwardRefRenderFunction, type RefObject } from "react";
+import { useEffect, useRef, useMemo, useState, type ReactNode, forwardRef, type ForwardRefRenderFunction, type RefObject } from "react";
 import * as THREE from "three";
 import { useControls } from "leva";
 import { useFollowCam } from "./hooks/useFollowCam";
@@ -17,7 +17,7 @@ import { useGame } from "./stores/useGame";
 import { useJoystickControls } from "./stores/useJoystickControls";
 import type {
   Collider,
-  RayColliderToi,
+  RayColliderHit,
   Vector,
 } from "@dimforge/rapier3d-compat";
 import React from "react";
@@ -54,19 +54,24 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
   floatHeight = 0.3,
   characterInitDir = 0, // in rad
   followLight = false,
+  disableControl = false,
   disableFollowCam = false,
-  disableFollowCamPos = { x: 0, y: 0, z: -5 },
-  disableFollowCamTarget = { x: 0, y: 0, z: 0 },
+  disableFollowCamPos = null,
+  disableFollowCamTarget = null,
   // Follow camera setups
   camInitDis = -5,
   camMaxDis = -7,
   camMinDis = -0.7,
+  camUpLimit = 1.5, // in rad
+  camLowLimit = -1.3, // in rad
   camInitDir = { x: 0, y: 0 }, // in rad
   camTargetPos = { x: 0, y: 0, z: 0 },
   camMoveSpeed = 1,
   camZoomSpeed = 1,
   camCollision = true,
   camCollisionOffset = 0.7,
+  fixedCamRotMult = 1,
+  camListenerTarget = "domElement", // document or domElement
   // Follow light setups
   followLightPos = { x: 20, y: 30, z: 10 },
   // Base control setups
@@ -84,6 +89,7 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
   rejectVelMult = 4,
   moveImpulsePointY = 0.5,
   camFollowMult = 11,
+  camLerpMult = 25,
   fallingGravityScale = 2.5,
   fallingMaxVel = -20,
   wakeUpDelay = 200,
@@ -127,11 +133,15 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
    * Mode setup
    */
   let isModePointToMove: boolean = false
-  const setCameraBased = useGame((state) => state.setCameraBased);
-  const getCameraBased = useGame((state) => state.getCameraBased);
+  let functionKeyDown: boolean = false
+  let isModeFixedCamera: boolean = false
+  let isModeCameraBased: boolean = false
+  const setMoveToPoint = useGame((state) => state.setMoveToPoint)
+  const findMode = (mode: string, modes: string) => modes.split(" ").some(m => m === mode)
   if (mode) {
-    if (mode === "PointToMove") isModePointToMove = true
-    if (mode === "CameraBasedMovement") setCameraBased(true)
+    if (findMode("PointToMove", mode)) isModePointToMove = true
+    if (findMode("FixedCamera", mode)) isModeFixedCamera = true
+    if (findMode("CameraBasedMovement", mode)) isModeCameraBased = true
   }
 
   /** 
@@ -457,13 +467,13 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
   /**
    * Gamepad controls setup
    */
-  let controllerIndex: number = null
+  const [controllerIndex, setControllerIndex] = useState<number | null>(null)
   const gamepadKeys = { forward: false, backward: false, leftward: false, rightward: false };
   const gamepadJoystickVec2: THREE.Vector2 = useMemo(() => new THREE.Vector2(), [])
   let gamepadJoystickDis: number = 0
   let gamepadJoystickAng: number = 0
-  const gamepadConnect = (e: any) => { controllerIndex = e.gamepad.index }
-  const gamepadDisconnect = () => { controllerIndex = null }
+  const gamepadConnect = (e: any) => { setControllerIndex(e.gamepad.index) }
+  const gamepadDisconnect = () => { setControllerIndex(null) }
   const mergedKeys = useMemo(() => Object.assign({}, defaultControllerKeys, controllerKeys), [controllerKeys])
   const handleButtons = (buttons: readonly GamepadButton[]) => {
     gamepadKeys.forward = buttons[mergedKeys.forward].pressed
@@ -486,6 +496,7 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
       releaseAllButtons()
     }
   }
+
   const handleSticks = (axes: readonly number[]) => {
     // Gamepad first joystick trigger the EcctrlJoystick event to move the character
     if (Math.abs(axes[0]) > 0 || Math.abs(axes[1]) > 0) {
@@ -495,11 +506,12 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
       const runState = gamepadJoystickDis > 0.7
       setJoystick(gamepadJoystickDis, gamepadJoystickAng, runState)
     } else {
+      gamepadJoystickDis = 0
+      gamepadJoystickAng = 0
       resetJoystick()
     }
     // Gamepad second joystick trigger the useFollowCam event to move the camera
     if (Math.abs(axes[2]) > 0 || Math.abs(axes[3]) > 0) {
-      // console.log(axes[2], axes[3]);
       joystickCamMove(axes[2], axes[3])
     }
   }
@@ -535,18 +547,22 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
     camInitDis,
     camMaxDis,
     camMinDis,
+    camUpLimit,
+    camLowLimit,
     camInitDir,
-    camMoveSpeed,
-    camZoomSpeed,
-    camCollisionOffset
+    camMoveSpeed: isModeFixedCamera ? 0 : camMoveSpeed, // Disable camera move in fixed camera mode
+    camZoomSpeed: isModeFixedCamera ? 0 : camZoomSpeed, // Disable camera zoom in fixed camera mode
+    camCollisionOffset,
+    camListenerTarget,
   };
 
   /**
    * Load camera pivot and character move preset
    */
-  const { pivot, cameraCollisionDetect, joystickCamMove } =
+  const { pivot, followCam, cameraCollisionDetect, joystickCamMove } =
     useFollowCam(cameraSetups);
   const pivotPosition: THREE.Vector3 = useMemo(() => new THREE.Vector3(), []);
+  const followCamPosition: THREE.Vector3 = useMemo(() => new THREE.Vector3(), []);
   const modelEuler: THREE.Euler = useMemo(() => new THREE.Euler(), []);
   const modelQuat: THREE.Quaternion = useMemo(() => new THREE.Quaternion(), []);
   const moveImpulse: THREE.Vector3 = useMemo(() => new THREE.Vector3(), []);
@@ -569,7 +585,7 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
   const characterMassForce: THREE.Vector3 = useMemo(() => new THREE.Vector3(), []);
   const rayOrigin: THREE.Vector3 = useMemo(() => new THREE.Vector3(), []);
   const rayCast = new rapier.Ray(rayOrigin, rayDir);
-  let rayHit: RayColliderToi = null;
+  let rayHit: RayColliderHit | null = null;
 
   /**Test shape ray */
   // const shape = new rapier.Capsule(0.2,0.1)
@@ -585,7 +601,7 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
   const slopeRayOriginRef = useRef<THREE.Mesh>();
   const slopeRayorigin: THREE.Vector3 = useMemo(() => new THREE.Vector3(), []);
   const slopeRayCast = new rapier.Ray(slopeRayorigin, slopeRayDir);
-  let slopeRayHit: RayColliderToi = null;
+  let slopeRayHit: RayColliderHit | null = null;
 
   /**
    * Point to move setup
@@ -759,7 +775,7 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
     bodyBalanceVecOnZ.set(bodyBalanceVec.x, bodyBalanceVec.y, 0)
 
     // Check if is camera based movement
-    if (getCameraBased().isCameraBased) {
+    if (isModeCameraBased) {
       modelEuler.y = pivot.rotation.y
       pivot.getWorldDirection(modelFacingVec)
       // Update slopeRayOrigin to new positon
@@ -808,21 +824,24 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
   /**
    * Point-to-move function
    */
-  const pointToMove = (delta: number, slopeAngle: number, movingObjectVelocity: THREE.Vector3) => {
+  const pointToMove = (delta: number, slopeAngle: number, movingObjectVelocity: THREE.Vector3, functionKeyDown: boolean) => {
     const moveToPoint = getMoveToPoint().moveToPoint;
     if (moveToPoint) {
       pointToPoint.set(moveToPoint.x - currentPos.x, 0, moveToPoint.z - currentPos.z)
       crossVector.crossVectors(pointToPoint, vectorZ)
       // Rotate character to moving direction
       modelEuler.y = (crossVector.y > 0 ? -1 : 1) * pointToPoint.angleTo(vectorZ);
+      // If mode is also set to fixed camera. keep the camera on the back of character
+      if (isModeFixedCamera) pivot.rotation.y = THREE.MathUtils.lerp(pivot.rotation.y, modelEuler.y, fixedCamRotMult * delta * 3);
       // Once character close to the target point (distance<0.3),
       // Or character close to the wall (bodySensor intersects) 
       // stop moving
       if (characterRef.current) {
-        if (pointToPoint.length() > 0.3 && !isBodyHitWall) {
+        if (pointToPoint.length() > 0.3 && !isBodyHitWall && !functionKeyDown) {
           moveCharacter(delta, false, slopeAngle, movingObjectVelocity)
           isPointMoving = true
         } else {
+          setMoveToPoint(null);
           isPointMoving = false
         }
       }
@@ -1005,6 +1024,32 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
     }
 
     /**
+     * Camera movement
+     */
+    pivotPosition.set(
+      currentPos.x + camTargetPos.x,
+      currentPos.y + (camTargetPos.y || (capsuleHalfHeight + capsuleRadius / 2)),
+      currentPos.z + camTargetPos.z
+    );
+    pivot.position.lerp(pivotPosition, 1 - Math.exp(-camFollowMult * delta));
+
+    if (!disableFollowCam) {
+      followCam.getWorldPosition(followCamPosition);
+      state.camera.position.lerp(followCamPosition, 1 - Math.exp(-camLerpMult * delta));
+      state.camera.lookAt(pivot.position);
+    }
+
+    /**
+     * Camera collision detect
+     */
+    camCollision && cameraCollisionDetect(delta);
+
+    /**
+     * If disableControl is true, skip all following features 
+     */
+    if (disableControl) return;
+
+    /**
      * Getting all gamepad control values
      */
     if (controllerIndex !== null) {
@@ -1078,23 +1123,12 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
 
     // If autobalance is off, rotate character model itself
     if (!autoBalance) {
-      if (getCameraBased().isCameraBased) {
+      if (isModeCameraBased) {
         characterModelRef.current.quaternion.copy(pivot.quaternion)
       } else {
         characterModelRef.current.quaternion.copy(characterModelIndicator.quaternion)
       }
     }
-
-    /**
-     *  Camera movement
-     */
-    pivotPosition.set(
-      currentPos.x + camTargetPos.x,
-      currentPos.y + (camTargetPos.y || (capsuleHalfHeight + capsuleRadius / 2)),
-      currentPos.z + camTargetPos.z
-    );
-    pivot.position.lerp(pivotPosition, 1 - Math.exp(-camFollowMult * delta));
-    !disableFollowCam && state.camera.lookAt(pivot.position);
 
     /**
      * Ray casting detect if on ground
@@ -1114,6 +1148,7 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
         collider.parent().userData && !(collider.parent().userData as userDataType).excludeEcctrlRay
       ))
     );
+
     /**Test shape ray */
     // rayHit = world.castShape(
     //   currentPos,
@@ -1127,7 +1162,7 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
     //   characterRef.current
     // );
 
-    if (rayHit && rayHit.toi < floatingDis + rayHitForgiveness) {
+    if (rayHit && rayHit.timeOfImpact < floatingDis + rayHitForgiveness) {
       if (slopeRayHit && actualSlopeAngle < slopeMaxAngle) {
         canJump = true;
       }
@@ -1143,7 +1178,7 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
         // Getting the standing force apply point
         standingForcePoint.set(
           rayOrigin.x,
-          rayOrigin.y - rayHit.toi,
+          rayOrigin.y - rayHit.timeOfImpact,
           rayOrigin.z
         );
         const rayHitObjectBodyType = rayHit.collider.parent().bodyType();
@@ -1260,12 +1295,12 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
         actualSlopeAngle = actualSlopeNormalVec?.angleTo(floorNormal);
       }
     }
-    if (slopeRayHit && rayHit && slopeRayHit.toi < floatingDis + 0.5) {
+    if (slopeRayHit && rayHit && slopeRayHit.timeOfImpact < floatingDis + 0.5) {
       if (canJump) {
         // Round the slope angle to 2 decimal places
         slopeAngle = Number(
           Math.atan(
-            (rayHit.toi - slopeRayHit.toi) / slopeRayOriginOffest
+            (rayHit.timeOfImpact - slopeRayHit.timeOfImpact) / slopeRayOriginOffest
           ).toFixed(2)
         );
       } else {
@@ -1281,7 +1316,7 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
     if (rayHit != null) {
       if (canJump && rayHit.collider.parent()) {
         floatingForce =
-          springK * (floatingDis - rayHit.toi) -
+          springK * (floatingDis - rayHit.timeOfImpact) -
           characterRef.current.linvel().y * dampingC;
         characterRef.current.applyImpulse(
           springDirVec.set(0, floatingForce, 0),
@@ -1357,14 +1392,33 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
     if (autoBalance && characterRef.current) autoBalanceCharacter();
 
     /**
-     * Camera collision detect
-     */
-    camCollision && cameraCollisionDetect(delta);
-
-    /**
      * Point to move feature
      */
-    isModePointToMove && pointToMove(delta, slopeAngle, movingObjectVelocity)
+    if (isModePointToMove) {
+      functionKeyDown = (forward || backward || leftward || rightward || joystickDis > 0 || gamepadKeys.forward || gamepadKeys.backward || gamepadKeys.leftward || gamepadKeys.rightward || jump || button1Pressed)
+      pointToMove(delta, slopeAngle, movingObjectVelocity, functionKeyDown)
+    }
+
+    /**
+     * Fixed camera feature
+     */
+    if (isModeFixedCamera) {
+      if (
+        leftward ||
+        gamepadKeys.leftward ||
+        (joystickDis > 0 && joystickAng > 2 * Math.PI / 3 && joystickAng < 4 * Math.PI / 3) ||
+        (gamepadJoystickDis > 0 && gamepadJoystickAng > 2 * Math.PI / 3 && gamepadJoystickAng < 4 * Math.PI / 3)
+      ) {
+        pivot.rotation.y += (run ? delta * sprintMult * fixedCamRotMult : delta * fixedCamRotMult)
+      } else if (
+        rightward ||
+        gamepadKeys.rightward ||
+        (joystickDis > 0 && joystickAng < Math.PI / 3 || joystickAng > 5 * Math.PI / 3) ||
+        (gamepadJoystickDis > 0 && gamepadJoystickAng < Math.PI / 3 || gamepadJoystickAng > 5 * Math.PI / 3)
+      ) {
+        pivot.rotation.y -= (run ? delta * sprintMult * fixedCamRotMult : delta * fixedCamRotMult)
+      }
+    }
 
     /**
      * Apply all the animations
@@ -1445,6 +1499,8 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
 
 export default forwardRef(Ecctrl);
 
+export type camListenerTargetType = "document" | "domElement";
+
 export interface EcctrlProps extends RigidBodyProps {
   children?: ReactNode;
   debug?: boolean;
@@ -1453,6 +1509,7 @@ export interface EcctrlProps extends RigidBodyProps {
   floatHeight?: number;
   characterInitDir?: number;
   followLight?: boolean;
+  disableControl?: boolean;
   disableFollowCam?: boolean;
   disableFollowCamPos?: { x: number, y: number, z: number };
   disableFollowCamTarget?: { x: number, y: number, z: number };
@@ -1460,12 +1517,16 @@ export interface EcctrlProps extends RigidBodyProps {
   camInitDis?: number;
   camMaxDis?: number;
   camMinDis?: number;
+  camUpLimit?: number;
+  camLowLimit?: number;
   camInitDir?: { x: number, y: number };
   camTargetPos?: { x: number, y: number, z: number };
   camMoveSpeed?: number;
   camZoomSpeed?: number;
   camCollision?: boolean;
   camCollisionOffset?: number;
+  fixedCamRotMult?: number;
+  camListenerTarget?: camListenerTargetType;
   // Follow light setups
   followLightPos?: { x: number, y: number, z: number };
   // Base control setups
@@ -1483,6 +1544,7 @@ export interface EcctrlProps extends RigidBodyProps {
   rejectVelMult?: number;
   moveImpulsePointY?: number;
   camFollowMult?: number;
+  camLerpMult?: number;
   fallingGravityScale?: number;
   fallingMaxVel?: number;
   wakeUpDelay?: number;

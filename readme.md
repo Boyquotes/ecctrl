@@ -13,26 +13,13 @@
 
 ## New Features
 
-### (2024-1-1) EcctrlMode:
+### (2024-6-24) FixedCamera Mode:
 
-- Now you can seamlessly switch between different modes by adding "mode" inside Ecctrl.
+- The “FixedCamera” mode automatically rotates the camera as the character turns (similar to the controls in Coastal World). You can activate it with the following code:
 
-`<Ecctrl mode="PointToMove">`
+`<Ecctrl mode="FixedCamera">`
 
-- "PointToMove" mode is designed for click-to-move or path following features. (no needs for keyboard controls)
-
-```js
-import { useGame } from "ecctrl";
-// ...
-const setMoveToPoint = useGame((state) => state.setMoveToPoint);
-// ...
-// call function setMoveToPoint(), whenever character needs to move
-setMoveToPoint(point); // "point" is a vec3 value
-```
-
-- Here is a simple click-to-move example: [Ecctrl CodeSandbox](https://codesandbox.io/p/sandbox/ecctrl-pointtomove-m9z6xh)
-
-[![screenshot](example/ecctrlClickToMove.png)](https://codesandbox.io/p/sandbox/ecctrl-pointtomove-m9z6xh)
+![screenshot](example/EcctrlFixedCamera.png)
 
 Check out the [featurelog.md](/featurelog.md) for details on previous updates and features.
 
@@ -117,6 +104,7 @@ EcctrlProps: {
   floatHeight: 0.3, // Height of the character when floating
   characterInitDir: 0, // Character initial facing direction (in rad)
   followLight: false, // Enable follow light mode (name your light "followLight" before turn this on)
+  disableControl: false, // Disable the ecctrl control feature
   disableFollowCam: false, // Disable follow camera feature
   disableFollowCamPos: { x: 0, y: 0, z: -5 }, // Camera position when the follow camera feature is disabled
   disableFollowCamTarget: { x: 0, y: 0, z: 0 }, // Camera lookAt target when the follow camera feature is disabled
@@ -124,13 +112,17 @@ EcctrlProps: {
   camInitDis: -5, // Initial camera distance
   camMaxDis: -7, // Maximum camera distance
   camMinDis: -0.7, // Minimum camera distance
+  camUpLimit: 1.5, // Camera upward limit (in rad)
+  camLowLimit: -1.3, // Camera loward limit (in rad)
   camInitDir: { x: 0, y: 0 }, // Camera initial rotation direction (in rad)
   camTargetPos: { x: 0, y: 0, z: 0 }, // Camera target position
   camMoveSpeed: 1, // Camera moving speed multiplier
   camZoomSpeed: 1, // Camera zooming speed multiplier
   camCollision: true, // Camera collision active/deactive
   camCollisionOffset: 0.7, // Camera collision offset
-   // Follow light setups
+  fixedCamRotMult: 1, // Camera rotate speed multiplier (FixedCamera mode)
+  camListenerTarget: "domElement", // Camera listener target ("domElement" | "document")
+  // Follow light setups
   followLightPos: { x: 20, y: 30, z: 10 }, // Follow light position
   // Base control setups
   maxVelLimit: 2.5, // Maximum velocity limit
@@ -146,7 +138,8 @@ EcctrlProps: {
   accDeltaTime: 8, // Acceleration delta time
   rejectVelMult: 4, // Reject velocity multiplier
   moveImpulsePointY: 0.5, // Move impulse point Y offset
-  camFollowMult: 11, // Camera follow speed multiplier
+  camFollowMult: 11, // Camera follow target speed multiplier
+  camLerpMult: 25, // Camera lerp to position speed multiplier
   fallingGravityScale: 2.5, // Character is falling, apply higher gravity
   fallingMaxVel: -20, // Limit character max falling velocity
   wakeUpDelay: 200, // Wake up character delay time after window visibility change to visible (in ms)
@@ -175,7 +168,7 @@ EcctrlProps: {
   // Animation temporary setups
   animated: false, // Enable animation
   // Mode setups
-  mode: null, // Activate different ecctrl modes
+  mode: null, // Activate different ecctrl modes ("CameraBasedMovement" | "FixedCamera" | "PointToMove")
   // Customizable controller key setups
   controllerKeys: { forward: 12, backward: 13, leftward: 14, rightward: 15, jump: 2, action1: 11, action2: 3, action3: 1, action4: 0 },
   // Other rigibody props from parent
@@ -447,9 +440,11 @@ If you would like to quickly set up a first-person mode, you can modify these pr
 
 ```js
 <Ecctrl
+  camCollision={false} // disable camera collision detect (useless in FP mode)
   camInitDis={-0.01} // camera intial position
   camMinDis={-0.01} // camera zoom in closest position
-  camFollowMult={100} // give any big number here, so the camera follows the character instantly
+  camFollowMult={1000} // give a big number here, so the camera follows the target (character) instantly
+  camLerpMult={1000} // give a big number here, so the camera lerp to the followCam position instantly
   turnVelMultiplier={1} // Turning speed same as moving speed
   turnSpeed={100} // give it big turning speed to prevent turning wait time
   mode="CameraBasedMovement" // character's rotation will follow camera's rotation in this mode
