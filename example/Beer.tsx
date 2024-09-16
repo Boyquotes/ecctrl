@@ -126,6 +126,7 @@ export default function Beer() {
   const [wordSended, setWordSended] = useState([])
   const [cubeMesh, setCubeMesh] = useState([]);
   const [cubeText, setCubeText] = useState([]);
+  const [cubeNetworthText, setCubeNetworthText] = useState([]);
   const [cubeRigid, setCubeRigid] = useState([]);
   const [positionX, setPositionX] = useState(5);
   const cubeRef = useRef<RapierRigidBody>();
@@ -152,7 +153,7 @@ export default function Beer() {
         const response = await fetch(allEnglishWords)
             .then(r => r.text())
             .then(text => {
-                console.log('text decoded:', text);
+                // console.log('text decoded:', text);
                 setTextEnglish(text);
                 return text; // Supposons que ceci est un calcul coûteux
             })
@@ -165,6 +166,62 @@ export default function Beer() {
     };
 
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchDataSonar = async () => {
+        const apiUrl="https://portfolio-api.sonar.watch/v1/portfolio/fetch?useCache=false&address=GthTyfd3EV9Y8wN6zhZeES5PgT2jQVzLrZizfZquAY5S&addressSystem=solana"
+        try {
+            const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer alyraFqxeL6luVs9a3XQ8KG7n2H`,
+                'Content-Type': 'application/json'
+            }
+            });
+
+            if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("data sonar");
+            console.log(data);
+            console.log(data.fetcherReports);
+            console.log(data.owner);
+            console.log(data.tokenInfo);
+            // debugger
+            data.elements.forEach(element => {
+                console.log(element)
+                if(element.platformId == "wallet-tokens"){
+                    if(element.value>1){
+                        let netWorth=element.value.toFixed(2);
+                        console.log('aquis'+netWorth);
+                        const newText = (
+                        <Text
+                        rotation={[0, Math.PI, 0]}
+                        position={[23, 1, -6.51]}
+                        color="green"
+                        fontSize={0.5}
+                        textAlign="center"
+                        >
+                        {netWorth}
+                        </Text>);            
+                        setCubeNetworthText((prevMeshes) => [...prevMeshes, newText]);
+                    }
+                    else{
+                        let netWorth=element.value.toFixed(4);
+                        console.log('aquis'+netWorth);
+                    }
+
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    };
+
+    fetchDataSonar();
   }, []);
 
   const memoizedData = useMemo(() => {
@@ -312,6 +369,12 @@ export default function Beer() {
   const removeLastLetter = () => {
     console.log("letter");
     console.log(cubeRigid[cubeRigid.length-1])
+    audioLoader.load( 'remove.wav', function( buffer ) {
+        sound.setBuffer( buffer );
+        sound.setLoop( false );
+        sound.setVolume( 0.5 );
+        sound.play();
+    });
     let lastCube = cubeRigid[cubeRigid.length-1];
     // cubeRigid[cubeRigid.length-1])
     // cubeRigid[cubeRigid.length-1] = null;
@@ -582,6 +645,7 @@ export default function Beer() {
             );
           // }
         })}
+        {cubeNetworthText}
         {cubeSuccess}
         {/* {cubeText.map((item2, i2, arr2) => {
           console.log(cubeText)
