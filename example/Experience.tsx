@@ -15,7 +15,7 @@ import ShotCube from "./ShotCube";
 import { useControls } from "leva";
 import CharacterModel from "./CharacterModel";
 import React, { useEffect, useState } from "react";
-import { Api } from "nocodb-sdk";
+// import { Api } from "nocodb-sdk";
 
 export default function Experience() {
 

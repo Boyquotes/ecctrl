@@ -3,7 +3,7 @@ import { RigidBody } from "@react-three/rapier";
 import { useGLTF, Text } from "@react-three/drei";
 import * as THREE from "three";
 import { useThree, Canvas } from "@react-three/fiber";
-import { Api } from "nocodb-sdk";
+// import { Api } from "nocodb-sdk";
 import * as React from 'react';
 import { useRef, useMemo, useState, useEffect } from "react";
 import ShotCube from "./ShotCube";
@@ -72,12 +72,12 @@ export default function Beer() {
   //   name: "",
   // }])
 
-  const api = new Api({
-    baseURL: "http://37.187.141.70:8080",
-    headers: {
-      "xc-token": "KJW6bNF5WOJtrRXCm4rSOmQ0jfdE5T89wtoehcLe"
-    }
-  })
+//   const api = new Api({
+//     baseURL: "http://37.187.141.70:8080",
+//     headers: {
+//       "xc-token": "KJW6bNF5WOJtrRXCm4rSOmQ0jfdE5T89wtoehcLe"
+//     }
+//   })
   // printAlphabet()
 
   const [num, setNum] = useState(0);
