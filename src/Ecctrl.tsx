@@ -9,12 +9,13 @@ import {
   type RigidBodyProps,
   CylinderCollider,
 } from "@react-three/rapier";
-import { useEffect, useRef, useMemo, useState, type ReactNode, forwardRef, type ForwardRefRenderFunction, type RefObject } from "react";
+import { useEffect, useRef, useMemo, useState, useImperativeHandle, forwardRef, type ReactNode, type ForwardRefRenderFunction } from "react";
 import * as THREE from "three";
 import { useControls } from "leva";
 import { useFollowCam } from "./hooks/useFollowCam";
 import { useGame } from "./stores/useGame";
 import { useJoystickControls } from "./stores/useJoystickControls";
+import { QueryFilterFlags } from "@dimforge/rapier3d-compat";
 import type {
   Collider,
   RayColliderHit,
@@ -46,7 +47,7 @@ const getMovingDirection = (forward: boolean,
   if (forward) return pivot.rotation.y;
 };
 
-const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
+const Ecctrl: ForwardRefRenderFunction<CustomEcctrlRigidBody, EcctrlProps> = ({
   children,
   debug = false,
   capsuleHalfHeight = 0.35,
@@ -70,6 +71,7 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
   camZoomSpeed = 1,
   camCollision = true,
   camCollisionOffset = 0.7,
+  camCollisionSpeedMult = 4,
   fixedCamRotMult = 1,
   camListenerTarget = "domElement", // document or domElement
   // Follow light setups
@@ -121,13 +123,25 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
   mode = null,
   // Controller setups
   controllerKeys = { forward: 12, backward: 13, leftward: 14, rightward: 15, jump: 2, action1: 11, action2: 3, action3: 1, action4: 0 },
+  // Point-to-move setups
+  bodySensorSize = [capsuleHalfHeight / 2, capsuleRadius],
+  bodySensorPosition = { x: 0, y: 0, z: capsuleRadius / 2 },
   // Other rigibody props from parent
   ...props
 }: EcctrlProps, ref) => {
-  const characterRef = ref as RefObject<RapierRigidBody> || useRef<RapierRigidBody>()
+  const characterRef = useRef<CustomEcctrlRigidBody>(null)
+  // const characterRef = ref as RefObject<RapierRigidBody> || useRef<RapierRigidBody>()
   const characterModelRef = useRef<THREE.Group>();
   const characterModelIndicator: THREE.Object3D = useMemo(() => new THREE.Object3D(), [])
   const defaultControllerKeys = { forward: 12, backward: 13, leftward: 14, rightward: 15, jump: 2, action1: 11, action2: 3, action3: 1, action4: 0 }
+  useImperativeHandle(ref, () => {
+    if (characterRef.current) {
+      characterRef.current.rotateCamera = rotateCamera;
+      characterRef.current.rotateCharacterOnY = rotateCharacterOnY;
+      return characterRef.current!;
+    }
+    return null;
+  }, [characterRef.current]);
 
   /**
    * Mode setup
@@ -519,7 +533,7 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
   // can jump setup
   let canJump: boolean = false;
   let isFalling: boolean = false;
-  const initialGravityScale: number = useMemo(() => props.gravityScale || 1, [])
+  const initialGravityScale: number = useMemo(() => props.gravityScale ?? 1, [])
 
   // on moving object state
   let massRatio: number = 1;
@@ -553,6 +567,7 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
     camMoveSpeed: isModeFixedCamera ? 0 : camMoveSpeed, // Disable camera move in fixed camera mode
     camZoomSpeed: isModeFixedCamera ? 0 : camZoomSpeed, // Disable camera zoom in fixed camera mode
     camCollisionOffset,
+    camCollisionSpeedMult,
     camListenerTarget,
   };
 
@@ -562,6 +577,9 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
   const { pivot, followCam, cameraCollisionDetect, joystickCamMove } =
     useFollowCam(cameraSetups);
   const pivotPosition: THREE.Vector3 = useMemo(() => new THREE.Vector3(), []);
+  const pivotXAxis: THREE.Vector3 = useMemo(() => new THREE.Vector3(1, 0, 0), []);
+  const pivotYAxis: THREE.Vector3 = useMemo(() => new THREE.Vector3(0, 1, 0), []);
+  const pivotZAxis: THREE.Vector3 = useMemo(() => new THREE.Vector3(0, 0, 1), []);
   const followCamPosition: THREE.Vector3 = useMemo(() => new THREE.Vector3(), []);
   const modelEuler: THREE.Euler = useMemo(() => new THREE.Euler(), []);
   const modelQuat: THREE.Quaternion = useMemo(() => new THREE.Quaternion(), []);
@@ -848,6 +866,24 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
     }
   }
 
+  /**
+   * Rotate camera function
+   */
+  const rotateCamera = (x: number, y: number) => {
+    pivot.rotation.y += y;
+    followCam.rotation.x = Math.min(
+      Math.max(followCam.rotation.x + x, camLowLimit),
+      camUpLimit
+    );
+  };
+
+  /**
+   * Rotate character on Y function
+   */
+  const rotateCharacterOnY = (rad: number) => {
+    modelEuler.y += rad;
+  };
+
   useEffect(() => {
     // Initialize directional light
     if (followLight) {
@@ -1026,11 +1062,14 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
     /**
      * Camera movement
      */
-    pivotPosition.set(
-      currentPos.x + camTargetPos.x,
-      currentPos.y + (camTargetPos.y || (capsuleHalfHeight + capsuleRadius / 2)),
-      currentPos.z + camTargetPos.z
-    );
+    pivotXAxis.set(1, 0, 0)
+    pivotXAxis.applyQuaternion(pivot.quaternion)
+    pivotZAxis.set(0, 0, 1)
+    pivotZAxis.applyQuaternion(pivot.quaternion)
+    pivotPosition.copy(currentPos)
+      .addScaledVector(pivotXAxis, camTargetPos.x)
+      .addScaledVector(pivotYAxis, camTargetPos.y + (capsuleHalfHeight + capsuleRadius / 2))
+      .addScaledVector(pivotZAxis, camTargetPos.z)
     pivot.position.lerp(pivotPosition, 1 - Math.exp(-camFollowMult * delta));
 
     if (!disableFollowCam) {
@@ -1137,9 +1176,8 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
     rayHit = world.castRay(
       rayCast,
       rayLength,
-      true,
-      // this exclude sensor 
-      16,
+      false,
+      QueryFilterFlags.EXCLUDE_SENSORS,
       null,
       null,
       characterRef.current,
@@ -1267,9 +1305,8 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
     slopeRayHit = world.castRay(
       slopeRayCast,
       slopeRayLength,
-      true,
-      // this exclude sensor 
-      16,
+      false,
+      QueryFilterFlags.EXCLUDE_SENSORS,
       null,
       null,
       characterRef.current,
@@ -1471,8 +1508,9 @@ const Ecctrl: ForwardRefRenderFunction<RapierRigidBody, EcctrlProps> = ({
         <CylinderCollider
           ref={bodySensorRef}
           sensor
-          args={[capsuleHalfHeight / 2, capsuleRadius]}
-          position={[0, 0, capsuleRadius / 2]}
+          mass={0}
+          args={[bodySensorSize[0], bodySensorSize[1]]}
+          position={[bodySensorPosition.x, bodySensorPosition.y, bodySensorPosition.z]}
           onIntersectionEnter={handleOnIntersectionEnter}
           onIntersectionExit={handleOnIntersectionExit}
         />}
@@ -1501,6 +1539,11 @@ export default forwardRef(Ecctrl);
 
 export type camListenerTargetType = "document" | "domElement";
 
+export interface CustomEcctrlRigidBody extends RapierRigidBody {
+  rotateCamera?: (x: number, y: number) => void;
+  rotateCharacterOnY?: (rad: number) => void;
+}
+
 export interface EcctrlProps extends RigidBodyProps {
   children?: ReactNode;
   debug?: boolean;
@@ -1525,6 +1568,7 @@ export interface EcctrlProps extends RigidBodyProps {
   camZoomSpeed?: number;
   camCollision?: boolean;
   camCollisionOffset?: number;
+  camCollisionSpeedMult?: number;
   fixedCamRotMult?: number;
   camListenerTarget?: camListenerTargetType;
   // Follow light setups
@@ -1581,6 +1625,9 @@ export interface EcctrlProps extends RigidBodyProps {
   mode?: string;
   // Controller setups
   controllerKeys?: { forward?: number, backward?: number, leftward?: number, rightward?: number, jump?: number, action1?: number, action2?: number, action3?: number, action4?: number }
+  // Point-to-move setups
+  bodySensorSize?: Array<number>;
+  bodySensorPosition?: { x: number, y: number, z: number }
   // Other rigibody props from parent
   props?: RigidBodyProps;
 };

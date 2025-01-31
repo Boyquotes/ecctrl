@@ -120,6 +120,7 @@ EcctrlProps: {
   camZoomSpeed: 1, // Camera zooming speed multiplier
   camCollision: true, // Camera collision active/deactive
   camCollisionOffset: 0.7, // Camera collision offset
+  camCollisionSpeedMult: 4, // Camera collision lerping speed multiplier
   fixedCamRotMult: 1, // Camera rotate speed multiplier (FixedCamera mode)
   camListenerTarget: "domElement", // Camera listener target ("domElement" | "document")
   // Follow light setups
@@ -163,14 +164,17 @@ EcctrlProps: {
   autoBalance: true, // Enable auto-balance
   autoBalanceSpringK: 0.3, // Auto-balance spring constant
   autoBalanceDampingC: 0.03, // Auto-balance damping coefficient
-  autoBalanceSpringOnY: 0.5, // Auto-balance spring on Y-axis 
-  autoBalanceDampingOnY: 0.015, // Auto-balance damping on Y-axis 
+  autoBalanceSpringOnY: 0.5, // Auto-balance spring on Y-axis
+  autoBalanceDampingOnY: 0.015, // Auto-balance damping on Y-axis
   // Animation temporary setups
   animated: false, // Enable animation
   // Mode setups
   mode: null, // Activate different ecctrl modes ("CameraBasedMovement" | "FixedCamera" | "PointToMove")
   // Customizable controller key setups
   controllerKeys: { forward: 12, backward: 13, leftward: 14, rightward: 15, jump: 2, action1: 11, action2: 3, action3: 1, action4: 0 },
+  // Point-to-move setups
+  bodySensorSize: [capsuleHalfHeight / 2, capsuleRadius], // cylinder body sensor [halfHeight, radius]
+  bodySensorPosition: { x: 0, y: 0, z: capsuleRadius / 2 },
   // Other rigibody props from parent
   // Rigidbody props can be used here,
   // such as position, friction, gravityScale, etc.
@@ -365,6 +369,7 @@ Here are all the properties you can play with for `<EcctrlJoystick>`:
 EcctrlJoystickProps: {
     // Joystick props
     children?: ReactNode;
+    joystickRunSensitivity?: number; // Sensitivity for transitioning to the running state. The default value is 0.9 (valid range: 0 < joystickRunSensitivity < 1)
     joystickPositionLeft?: number; // joystick div container position left
     joystickPositionBottom?: number; // joystick div container position bottom
     joystickHeightAndWidth?: number; // joystick div container height and width
@@ -418,7 +423,7 @@ pressButton1();
 
 ### Ecctrl Mode
 
-Activate different modes in Ecctrl by including the desired mode inside Ecctrl component: 
+Activate different modes in Ecctrl by including the desired mode inside Ecctrl component:
 `<Ecctrl mode="PointToMove">`.
 
 #### 1. "PointToMove" Mode ([CodeSandbox Demo](https://codesandbox.io/p/sandbox/ecctrl-pointtomove-m9z6xh?file=%2Fsrc%2FMap.js%3A46%2C19))
