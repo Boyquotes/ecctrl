@@ -10,7 +10,7 @@ import ShotCube from "./ShotCube";
 import CountDown from "./CountDown";
 // import allEnglishWords from '../public/words.txt';
 import allEnglishWords from '../public/words20k.txt';
-import { log } from "three/examples/jsm/nodes/Nodes.js";
+// import { log } from "three/examples/jsm/nodes/Nodes.js";
 // import allEnglishWords from '../public/example.txt';
 // const words = fs.readFileSync('words.txt','utf8').split('\n');
 // console.log(words);
