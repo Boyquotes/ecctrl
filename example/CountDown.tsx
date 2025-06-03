@@ -26,9 +26,9 @@ const Countdown = () => {
   }, [initialTime]);
 
   return (
-    <group position={[-6, 1, -10]} onClick={resetCountdown}>
+    <group position={[-6, 2, 0]} onClick={resetCountdown}>
         <Text
-        position={[10, 0, 0]}
+        position={[10, 4.5, 0]}
         rotation={[0, Math.PI, 0]}
         fontSize={1}
         color="orange"

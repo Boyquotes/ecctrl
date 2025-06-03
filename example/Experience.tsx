@@ -6,7 +6,7 @@ import Floor from "./Floor";
 import Lights from "./Lights";
 import Steps from "./Steps";
 import Slopes from "./Slopes";
-import Beer from "./Beer";
+import GameWords from "./GameWords";
 import RoughPlane from "./RoughPlane";
 import RigidObjects from "./RigidObjects";
 import FloatingPlatform from "./FloatingPlatform";
@@ -118,24 +118,23 @@ export default function Experience() {
         </KeyboardControls>
 
         {/* Rough plan */}
-        <RoughPlane />
+        {/* <RoughPlane /> */}
 
         {/* Slopes and stairs */}
-        <Slopes />
-        {/* Beer */}
-        <Beer />
+        {/* <Slopes /> */}
+        <GameWords />
 
         {/* Small steps */}
-        <Steps />
+        {/* <Steps /> */}
 
         {/* Rigid body objects */}
-        <RigidObjects />
+        {/* <RigidObjects /> */}
 
         {/* Floating platform */}
-        <FloatingPlatform />
+        {/* <FloatingPlatform /> */}
 
         {/* Dynamic platforms */}
-        <DynamicPlatforms />
+        {/* <DynamicPlatforms /> */}
 
         {/* Floor */}
         <Floor />
