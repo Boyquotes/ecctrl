@@ -8,13 +8,14 @@ import * as React from 'react';
 import { useRef, useMemo, useState, useEffect } from "react";
 import ShotCube from "./ShotCube";
 import CountDown from "./CountDown";
-// import allEnglishWords from '../public/words.txt';
-import allEnglishWords from '../public/words20k.txt';
+// Corrige l'import du fichier de mots : retire l'import direct
+// import allEnglishWords from '../public/words20k.txt';
+const allEnglishWordsUrl = '/words20k.txt';
 // import { log } from "three/examples/jsm/nodes/Nodes.js";
 // import allEnglishWords from '../public/example.txt';
 // const words = fs.readFileSync('words.txt','utf8').split('\n');
 // console.log(words);
-console.log(allEnglishWords)
+console.log(allEnglishWordsUrl)
 
 export function printAlphabet(): string[] {
   const ENGLISH = 'abcdefghijklmnopqrstuvwxyz'.split(''); // [a,b,c,d,...]
@@ -82,6 +83,7 @@ export default function GameWords() {
   // printAlphabet()
 
   const [num, setNum] = useState(0);
+  const [score, setScore] = useState<number>(0);
 
   // initVoyels( // Replace the state
   // [ // with a new array
@@ -120,7 +122,7 @@ export default function GameWords() {
   var url = "http://37.187.141.70:8080/api/v2/tables/mciuxwbs54yuoro/records?offset=0&limit=25&where=&viewId=vw8zu07t9ja74uzi";
 
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<string>("");
   const [error, setError] = useState(null);
   const [voyels, initVoyels] = useState<string[]>([]);
   const [consonants, initConsonant] = useState<string[]>([]);
@@ -129,7 +131,7 @@ export default function GameWords() {
   const [cubeText, setCubeText] = useState<React.ReactElement[]>([]);
   const [cubeRigid, setCubeRigid] = useState<React.ReactElement[]>([]);
   const [positionX, setPositionX] = useState(5);
-  const cubeRef = useRef<RapierRigidBody>();
+  const cubeRef = useRef<any>();
   const position = useMemo(() => new THREE.Vector3(), []);
   const direction = useMemo(() => new THREE.Vector3(), []);
   const listener = new THREE.AudioListener();
@@ -152,14 +154,10 @@ export default function GameWords() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(allEnglishWords)
-            .then(r => r.text())
-            .then(text => {
-                console.log('text decoded:', text);
-                setTextEnglish(text);
-                return text; // Supposons que ceci est un calcul coûteux
-            })
-        setData(response);
+        const response = await fetch(allEnglishWordsUrl);
+        const text = await response.text();
+        setTextEnglish(text);
+        setData(text);
       } catch (err) {
         setError(err);
       } finally {
@@ -172,11 +170,7 @@ export default function GameWords() {
 
   const memoizedData = useMemo(() => {
     if (data) {
-      // Example transformation: filtering the data
-      console.log(data);
       const lines = data.split('\n');
-      console.log("lines")
-      console.log(lines)
       return lines;
     }
     return [];
@@ -424,6 +418,7 @@ export default function GameWords() {
             console.log(matches.length);
             if(matches.length > 0 && matches != ''){
                 setSuccessWords(prev => [...prev, completeWord[0]]);
+                setScore(prev => prev + calcWordScore(completeWord[0]));
                 const newMesh = (
                     <mesh
                     position={[positionX, 1, 0]}
@@ -694,24 +689,59 @@ export default function GameWords() {
             </group>
 
       <CountDown />
-      {successWords.map((word, idx) => (
-        <group key={word+idx} position={[idx * 3.2, 2.5, 0]} rotation={[0, Math.PI, 0]}>
-          <mesh position={[0, 0, -0.1]}>
-            <planeGeometry args={[3, 1]} />
-            <meshBasicMaterial color="white" />
-          </mesh>
-          <Text
-            position={[0, 0, 0]}
-            fontSize={0.6}
-            color="black"
-            anchorX="center"
-            anchorY="middle"
+      <group position={[6, 5, 0]} rotation={[0, Math.PI, 0]}>
+        <mesh position={[0, 0, -0.1]}>
+          <planeGeometry args={[6, 1.2]} />
+          <meshBasicMaterial color="gold" />
+        </mesh>
+        <Text
+          position={[0, 0, 0]}
+          fontSize={0.8}
+          color="black"
+          anchorX="center"
+          anchorY="middle"
+        >
+          Score : {score}
+        </Text>
+      </group>
+      {successWords.map((word, idx) => {
+        const wordsPerLine = 1;
+        const line = Math.floor(idx / wordsPerLine);
+        const col = idx % wordsPerLine;
+        return (
+          <group
+            key={word+idx}
+            position={[col * 2.2, 8.5 - line * 0.5, 4]}
+            rotation={[0, Math.PI, 0]}
           >
-            {word}
-          </Text>
-        </group>
-      ))}
+            <mesh position={[0, 0, -0.1]}>
+              <planeGeometry args={[3, 1]} />
+              <meshBasicMaterial color="white" />
+            </mesh>
+            <Text
+              position={[0, 0, 0]}
+              fontSize={0.6}
+              color="black"
+              anchorX="center"
+              anchorY="middle"
+            >
+              {word}
+            </Text>
+          </group>
+        );
+      })}
       </group>
 );
   
+}
+
+// Ajoute la fonction utilitaire si absente
+function calcWordScore(word: string) {
+  const vowels = 'aeiouy';
+  let s = 0;
+  for (const c of word.toLowerCase()) {
+    if (vowels.includes(c)) s += 3;
+    else if (c >= 'a' && c <= 'z') s += 2;
+  }
+  return s;
 }
