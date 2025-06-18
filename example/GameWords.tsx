@@ -568,6 +568,15 @@ export default function GameWords() {
       setCountdown(time);
     };
 
+    // Ajoute un useEffect pour jouer la musique quand countdown atteint 0
+    useEffect(() => {
+      if (countdown === 0) {
+        const audio = new window.Audio('/youwin.wav'); // Remplace par le fichier de ton choix
+        audio.volume = 0.7;
+        audio.play();
+      }
+    }, [countdown]);
+
     return (
       <group position={[0, 0, 10]}>
         {/* <RigidBody type="fixed" colliders="trimesh" rotation={[0, Math.PI, 0]}>
@@ -696,19 +705,33 @@ export default function GameWords() {
             </group>
 
       <CountDown onRestart={handleRestart} onTimeChange={handleCountdownChange} />
-      <group position={[6, 5, 0]} rotation={[0, Math.PI, 0]}>
+      <group position={[6, 6, 0]} rotation={[0, Math.PI, 0]}>
+        {/* Billboard fond */}
         <mesh position={[0, 0, -0.1]}>
-          <planeGeometry args={[6, 1.2]} />
-          <meshBasicMaterial color="gold" />
+          <planeGeometry args={[8, 2]} />
+          <meshStandardMaterial color="#f5f5f5" roughness={0.3} metalness={0.2} />
         </mesh>
+        {/* Score */}
         <Text
-          position={[0, 0, 0]}
-          fontSize={0.8}
-          color="black"
+          position={[-2.5, 0.4, 0]}
+          fontSize={0.7}
+          color="#1a237e"
           anchorX="center"
           anchorY="middle"
+          fontWeight="bold"
         >
           Score : {score}
+        </Text>
+        {/* Countdown */}
+        <Text
+          position={[2.5, 0.4, 0]}
+          fontSize={0.7}
+          color="#b71c1c"
+          anchorX="center"
+          anchorY="middle"
+          fontWeight="bold"
+        >
+          {countdown > 0 ? `⏳ ${Math.floor(countdown/60)}:${(countdown%60).toString().padStart(2,'0')}` : '⏳ 0:00'}
         </Text>
       </group>
       {successWords.map((word, idx) => {

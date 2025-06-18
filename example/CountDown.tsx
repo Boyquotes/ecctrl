@@ -38,21 +38,6 @@ const Countdown: React.FC<CountdownProps> = ({ onRestart, onTimeChange }) => {
 
   return (
     <group position={[-6, 2, 0]} onClick={resetCountdown}>
-        {/* Fond blanc derrière les chiffres */}
-        <mesh position={[10, 4.5, 0.2]} rotation={[0, Math.PI, 0]}>
-          <planeGeometry args={[3, 1.5]} />
-          <meshBasicMaterial color="white" />
-        </mesh>
-        <Text
-        position={[10, 4.5, 0]}
-        rotation={[0, Math.PI, 0]}
-        fontSize={1}
-        color="orange"
-        anchorX="center"
-        anchorY="middle"
-        >
-        {formatTime(timeLeft)}
-        </Text>
         <Text
         scale={0.5}
         color="black"
