@@ -565,6 +565,11 @@ export default function GameWords() {
     const handleRestart = () => {
       setScore(0);
       setSuccessWords([]);
+      setCubeRigid([]);
+      setCubeMesh([]);
+      setCubeText([]);
+      setWordSended([]);
+      setPositionX(5);
     };
 
     // Ajoute une fonction pour recevoir le temps restant depuis CountDown
