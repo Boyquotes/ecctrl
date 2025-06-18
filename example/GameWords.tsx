@@ -443,6 +443,11 @@ export default function GameWords() {
                 setCubeVerify(newMesh);
                 setTimeout(() => {
                     setCubeVerify(null);
+                    setCubeRigid([]);
+                    setCubeMesh([]);
+                    setCubeText([]);
+                    setWordSended([]);
+                    setPositionX(5);
                 }, 2000);
             }
             else{
