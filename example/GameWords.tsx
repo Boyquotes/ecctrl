@@ -690,7 +690,7 @@ export default function GameWords() {
 
       <CountDown />
       {successWords.map((word, idx) => (
-        <group key={word+idx} position={[idx * 2.2, 2.5, 0]}>
+        <group key={word+idx} position={[idx * 3.2, 2.5, 0]} rotation={[0, Math.PI, 0]}>
           <mesh position={[0, 0, -0.1]}>
             <planeGeometry args={[3, 1]} />
             <meshBasicMaterial color="white" />
