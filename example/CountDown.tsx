@@ -10,7 +10,7 @@ interface CountdownProps {
 }
 
 const Countdown: React.FC<CountdownProps> = ({ onRestart, onTimeChange }) => {
-  const initialTime = 90;
+  const initialTime = 20;
   const [timeLeft, setTimeLeft] = useState(initialTime);
 
   useEffect(() => {

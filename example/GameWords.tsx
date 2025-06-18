@@ -568,15 +568,6 @@ export default function GameWords() {
       setCountdown(time);
     };
 
-    // Ajoute un useEffect pour jouer la musique quand countdown atteint 0
-    useEffect(() => {
-      if (countdown === 0) {
-        const audio = new window.Audio('/youwin.wav'); // Remplace par le fichier de ton choix
-        audio.volume = 0.7;
-        audio.play();
-      }
-    }, [countdown]);
-
     return (
       <group position={[0, 0, 10]}>
         {/* <RigidBody type="fixed" colliders="trimesh" rotation={[0, Math.PI, 0]}>
@@ -769,9 +760,10 @@ export default function GameWords() {
 function calcWordScore(word: string) {
   const vowels = 'aeiouy';
   let s = 0;
+  const isLong = word.length > 4;
   for (const c of word.toLowerCase()) {
     if (vowels.includes(c)) s += 3;
-    else if (c >= 'a' && c <= 'z') s += 2;
+    else if (c >= 'a' && c <= 'z') s += isLong ? 4 : 2;
   }
   return s;
 }
