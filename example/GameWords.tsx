@@ -315,11 +315,15 @@ export default function GameWords() {
     // cubeRigid[cubeRigid.length-1] = null;
     deleteItem(cubeRigid.length-1);
     const newArray = [
-      ...wordSended.slice(0, wordSended.length-1), // Elements before the one to delete
-      ...wordSended.slice(wordSended.length-1 + 1) // Elements after the one to delete
+      ...wordSended.slice(0, wordSended.length-1),
+      ...wordSended.slice(wordSended.length-1 + 1)
     ];
     setWordSended(newArray);
     setPositionX(positionX+1.3);
+    // Joue le son remove.wav
+    const audio = new window.Audio('/remove.wav');
+    audio.volume = 0.7;
+    audio.play();
   }
 
   const sendWord = (word) => {
