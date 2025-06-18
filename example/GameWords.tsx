@@ -84,6 +84,7 @@ export default function GameWords() {
 
   const [num, setNum] = useState(0);
   const [score, setScore] = useState<number>(0);
+  const [countdown, setCountdown] = useState<number>(90);
 
   // initVoyels( // Replace the state
   // [ // with a new array
@@ -443,7 +444,7 @@ export default function GameWords() {
                     setCubeText([]);
                     setWordSended([]);
                     setPositionX(5);
-                }, 2000);
+                }, 1000);
             }
             else{
                 const newMesh = (
@@ -466,7 +467,7 @@ export default function GameWords() {
                 // Make verification cube disappear after 2 seconds
                 setTimeout(() => {
                     setCubeVerify(null);
-                }, 2000);
+                }, 1000);
             // var arraycontainsturtles2 = text.includes(completeWord[0]);
             // console.log("FIND2 "+arraycontainsturtles2);
             }
@@ -557,6 +558,16 @@ export default function GameWords() {
       document.body.style.cursor = hovered ? 'pointer' : 'auto'
     }, [hovered])
 
+    const handleRestart = () => {
+      setScore(0);
+      setSuccessWords([]);
+    };
+
+    // Ajoute une fonction pour recevoir le temps restant depuis CountDown
+    const handleCountdownChange = (time: number) => {
+      setCountdown(time);
+    };
+
     return (
       <group position={[0, 0, 10]}>
         {/* <RigidBody type="fixed" colliders="trimesh" rotation={[0, Math.PI, 0]}>
@@ -610,11 +621,9 @@ export default function GameWords() {
               position={[3+_idx, 4, 0]}
               color="red"
               fontSize={0.5}
-              // onClick={(e) => console.log('clickclick'+voyel)}
-              // onClick={(e) => clickToCreateBox()}
-              onClick={(e) => sendLetter(voyel, positionX)}
-              onPointerOver={() => setHovered(true)}
-              onPointerOut={() => setHovered(false)}
+              onClick={countdown === 0 ? undefined : (e) => sendLetter(voyel, positionX)}
+              onPointerOver={countdown === 0 ? undefined : () => setHovered(true)}
+              onPointerOut={countdown === 0 ? undefined : () => setHovered(false)}
             >
               {voyel}
             </Text>
@@ -630,11 +639,9 @@ export default function GameWords() {
               position={[0-_idx, 4, 0]}
               color="red"
               fontSize={0.5}
-              // onClick={(e) => console.log('clickclick'+voyel)}
-              // onClick={(e) => clickToCreateBox()}
-              onClick={(e) => sendLetter(voyel, positionX)}
-              onPointerOver={() => setHovered(true)}
-              onPointerOut={() => setHovered(false)}
+              onClick={countdown === 0 ? undefined : (e) => sendLetter(voyel, positionX)}
+              onPointerOver={countdown === 0 ? undefined : () => setHovered(true)}
+              onPointerOut={countdown === 0 ? undefined : () => setHovered(false)}
             >
               {voyel}
             </Text>
@@ -657,7 +664,7 @@ export default function GameWords() {
       </Text>;
       })} */}
 
-            <group position={[-3, 1, 0]} onClick={(e) => sendWord({wordSended})}>
+            <group position={[-3, 1, 0]} onClick={countdown === 0 ? undefined : (e) => sendWord({wordSended})}>
               <Text
                 scale={0.5}
                 color="black"
@@ -688,7 +695,7 @@ export default function GameWords() {
               </mesh>
             </group>
 
-      <CountDown />
+      <CountDown onRestart={handleRestart} onTimeChange={handleCountdownChange} />
       <group position={[6, 5, 0]} rotation={[0, Math.PI, 0]}>
         <mesh position={[0, 0, -0.1]}>
           <planeGeometry args={[6, 1.2]} />
@@ -745,3 +752,10 @@ function calcWordScore(word: string) {
   }
   return s;
 }
+
+// Ajoute la fonction resetCountdown si elle n'est pas déjà présente dans ce fichier
+const resetCountdown = () => {
+  setScore(0);
+  setSuccessWords([]);
+  // ...autres resets si besoin...
+};

@@ -3,7 +3,13 @@ import { extend } from '@react-three/fiber'
 import { Canvas } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 
-const Countdown = () => {
+// Ajout du type de prop
+interface CountdownProps {
+  onRestart?: () => void;
+  onTimeChange?: (time: number) => void;
+}
+
+const Countdown: React.FC<CountdownProps> = ({ onRestart, onTimeChange }) => {
   const initialTime = 90;
   const [timeLeft, setTimeLeft] = useState(initialTime);
 
@@ -15,6 +21,10 @@ const Countdown = () => {
     return () => clearInterval(intervalId);
   }, [timeLeft]);
 
+  useEffect(() => {
+    if (onTimeChange) onTimeChange(timeLeft);
+  }, [timeLeft, onTimeChange]);
+
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -23,7 +33,8 @@ const Countdown = () => {
 
   const resetCountdown = useCallback(() => {
     setTimeLeft(initialTime);
-  }, [initialTime]);
+    if (onRestart) onRestart();
+  }, [initialTime, onRestart]);
 
   return (
     <group position={[-6, 2, 0]} onClick={resetCountdown}>
@@ -49,6 +60,7 @@ const Countdown = () => {
         textAlign="center"
         position={[0, 1, 0]}
         rotation={[0, Math.PI/1.4, 0]}
+        onClick={(e) => { e.stopPropagation(); resetCountdown(); }}
         >
         Restart
         </Text>
