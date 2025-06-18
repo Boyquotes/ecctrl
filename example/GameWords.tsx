@@ -122,12 +122,12 @@ export default function GameWords() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  const [voyels, initVoyels] = useState([])
-  const [consonants, initConsonant] = useState([])
-  const [wordSended, setWordSended] = useState([])
-  const [cubeMesh, setCubeMesh] = useState([]);
-  const [cubeText, setCubeText] = useState([]);
-  const [cubeRigid, setCubeRigid] = useState([]);
+  const [voyels, initVoyels] = useState<string[]>([]);
+  const [consonants, initConsonant] = useState<string[]>([]);
+  const [wordSended, setWordSended] = useState<string[]>([]);
+  const [cubeMesh, setCubeMesh] = useState<React.ReactElement[]>([]);
+  const [cubeText, setCubeText] = useState<React.ReactElement[]>([]);
+  const [cubeRigid, setCubeRigid] = useState<React.ReactElement[]>([]);
   const [positionX, setPositionX] = useState(5);
   const cubeRef = useRef<RapierRigidBody>();
   const position = useMemo(() => new THREE.Vector3(), []);
@@ -136,7 +136,9 @@ export default function GameWords() {
   const sound = new THREE.Audio( listener );
   const audioLoader = new THREE.AudioLoader();
   const [textEnglish, setTextEnglish] = useState('age');
-  const [cubeSuccess, setCubeVerify] = useState([]);
+  const [cubeSuccess, setCubeVerify] = useState<React.ReactElement | null>(null);
+  const [successWord, setSuccessWord] = useState<string>("");
+  const [successWords, setSuccessWords] = useState<string[]>([]);
 
   const deleteItem = (index) => {
     const newArray = [
@@ -266,7 +268,7 @@ export default function GameWords() {
 
     // // Call API
     // const api = new Api({
-    //   baseURL: "http://37.187.141.70:8080",
+    //   baseURL: "http://37.187.141.70",
     //   headers: {
     //     "xc-token": "KJW6bNF5WOJtrRXCm4rSOmQ0jfdE5T89wtoehcLe"
     //   }
@@ -348,7 +350,7 @@ export default function GameWords() {
             castShadow
             receiveShadow
         >
-            <boxGeometry args={[3, 1, 1]} />
+            <boxGeometry args={[1, 1, 1]} />
             <meshStandardMaterial color="yellow" />
         </mesh>
         );
@@ -421,13 +423,14 @@ export default function GameWords() {
             console.log(matches);
             console.log(matches.length);
             if(matches.length > 0 && matches != ''){
+                setSuccessWords(prev => [...prev, completeWord[0]]);
                 const newMesh = (
                     <mesh
                     position={[positionX, 1, 0]}
                     castShadow
                     receiveShadow
                     >
-                    <boxGeometry args={[3, 1, 1]} />
+                    <boxGeometry args={[1, 1, 1]} />
                     <meshStandardMaterial color="green" />
                     </mesh>
                 );
@@ -438,6 +441,9 @@ export default function GameWords() {
                     sound.play();
                 });
                 setCubeVerify(newMesh);
+                setTimeout(() => {
+                    setCubeVerify(null);
+                }, 2000);
             }
             else{
                 const newMesh = (
@@ -446,9 +452,9 @@ export default function GameWords() {
                     castShadow
                     receiveShadow
                     >
-                    <boxGeometry args={[3, 1, 1]} />
+                    <boxGeometry args={[1, 1, 1]} />
                     <meshStandardMaterial color="red" />
-                    </mesh>
+                    1, 1, 1</mesh>
                 );
                 audioLoader.load( 'wrong.wav', function( buffer ) {
                     sound.setBuffer( buffer );
@@ -457,6 +463,10 @@ export default function GameWords() {
                     sound.play();
                 });
                 setCubeVerify(newMesh);
+                // Make verification cube disappear after 2 seconds
+                setTimeout(() => {
+                    setCubeVerify(null);
+                }, 2000);
             // var arraycontainsturtles2 = text.includes(completeWord[0]);
             // console.log("FIND2 "+arraycontainsturtles2);
             }
@@ -679,6 +689,23 @@ export default function GameWords() {
             </group>
 
       <CountDown />
+      {successWords.map((word, idx) => (
+        <group key={word+idx} position={[idx * 2.2, 2.5, 0]}>
+          <mesh position={[0, 0, -0.1]}>
+            <planeGeometry args={[3, 1]} />
+            <meshBasicMaterial color="white" />
+          </mesh>
+          <Text
+            position={[0, 0, 0]}
+            fontSize={0.6}
+            color="black"
+            anchorX="center"
+            anchorY="middle"
+          >
+            {word}
+          </Text>
+        </group>
+      ))}
       </group>
 );
   
