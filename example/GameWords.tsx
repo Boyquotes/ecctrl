@@ -689,6 +689,22 @@ export default function GameWords() {
       setWordSended([]);
       setPositionX(5);
       setShowSolver(false);
+      // Reset solver-related states
+      setSolverWords([]);
+      setPreComputedWords([]);
+      setSolverComputing(false);
+      console.log("🔄 Game restarted - solver state reset");
+      
+      // Re-launch async solver with current letters for new game
+      if (memoizedData.length > 0 && (consonants.length > 0 || voyels.length > 0)) {
+        const scrambledLetters = [...consonants, ...voyels];
+        console.log('🚀 Re-launching async solver for new game with letters:', scrambledLetters);
+        
+        computeSolverAsync(scrambledLetters, memoizedData).then((results) => {
+          setPreComputedWords(results);
+          console.log('💾 New pre-computed results ready for next game:', results);
+        });
+      }
     };
 
     const handleCountdownChange = (newCountdown: number) => {
