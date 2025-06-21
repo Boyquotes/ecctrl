@@ -11,6 +11,7 @@ import CountDown from "./CountDown";
 // Corrige l'import du fichier de mots : retire l'import direct
 // import allEnglishWords from '../public/words20k.txt';
 const allEnglishWordsUrl = '/words20k.txt';
+// const allEnglishWordsUrl = '/wordLight.txt';
 // import { log } from "three/examples/jsm/nodes/Nodes.js";
 // import allEnglishWords from '../public/example.txt';
 // const words = fs.readFileSync('words.txt','utf8').split('\n');
@@ -142,6 +143,11 @@ export default function GameWords() {
   const [cubeSuccess, setCubeVerify] = useState<React.ReactElement | null>(null);
   const [successWord, setSuccessWord] = useState<string>("");
   const [successWords, setSuccessWords] = useState<string[]>([]);
+  const [showSolver, setShowSolver] = useState(false);
+  const [solverWords, setSolverWords] = useState<string[]>([]);
+  const [hovered, setHovered] = useState(false);
+  const [preComputedWords, setPreComputedWords] = useState<string[]>([]);
+  const [solverComputing, setSolverComputing] = useState(false);
 
   const deleteItem = (index) => {
     const newArray = [
@@ -176,6 +182,119 @@ export default function GameWords() {
     }
     return [];
   }, [data]);
+
+  // Async solver function that runs at the beginning of the game
+  const computeSolverAsync = async (scrambledLetters: string[], wordsArray: string[]) => {
+    console.log('🚀 Starting async solver computation...');
+    setSolverComputing(true);
+    
+    // Start from a random position in the words file
+    const randomStart = Math.floor(Math.random() * Math.max(0, wordsArray.length - 1000));
+    console.log(`Starting search from random position: ${randomStart}`);
+    
+    return new Promise<string[]>((resolve) => {
+      // Use setTimeout to make it non-blocking
+      setTimeout(() => {
+        const matchedWords: string[] = [];
+        let processed = 0;
+        
+        // Process words in chunks to avoid blocking
+        const processChunk = (startIndex: number) => {
+          const chunkSize = 100;
+          const endIndex = Math.min(startIndex + chunkSize, wordsArray.length);
+          
+          for (let i = startIndex; i < endIndex; i++) {
+            const actualIndex = (randomStart + i) % wordsArray.length;
+            const word = wordsArray[actualIndex];
+            processed++;
+            
+            // First check if word has more than 4 letters
+            if (word.length <= 4) {
+              continue;
+            }
+
+            // Parse each letter in the word and verify if it exists in scrambledLetters
+            let allLettersFound = true;
+            for (let j = 0; j < word.length; j++) {
+              const letter = word[j];
+              if (!scrambledLetters.includes(letter)) {
+                allLettersFound = false;
+                break;
+              }
+            }
+            
+            if (allLettersFound && hasVowelAndConsonant(word)) {
+              matchedWords.push(word);
+              console.log(`✓ Pre-computed word found: "${word}"`);
+              
+              // Stop when we have enough words
+              if (matchedWords.length >= 10) {
+                break;
+              }
+            }
+          }
+          
+          // Continue processing if we haven't found enough words and haven't processed all
+          if (matchedWords.length < 10 && endIndex < wordsArray.length) {
+            setTimeout(() => processChunk(endIndex), 0);
+          } else {
+            console.log(`✅ Async solver completed. Found ${matchedWords.length} words after processing ${processed} words`);
+            setSolverComputing(false);
+            resolve(matchedWords.slice(0, 10));
+          }
+        };
+        
+        processChunk(0);
+      }, 0);
+    });
+  };
+
+  // Effect to start pre-computing solver results when letters are available
+  useEffect(() => {
+    if (memoizedData.length > 0 && (consonants.length > 0 || voyels.length > 0) && !solverComputing) {
+      const scrambledLetters = [...consonants, ...voyels];
+      console.log('🎯 Starting pre-computation with letters:', scrambledLetters);
+      
+      computeSolverAsync(scrambledLetters, memoizedData).then((results) => {
+        setPreComputedWords(results);
+        console.log('💾 Pre-computed results stored:', results);
+      });
+    }
+  }, [consonants, voyels, memoizedData, solverComputing]);
+
+  // Utilitaire pour vérifier si un mot contient au moins une voyelle et une consonne
+  function hasVowelAndConsonant(word: string) {
+    const vowels = 'aeiouy';
+    let hasVowel = false, hasConsonant = false;
+    for (const c of word.toLowerCase()) {
+      if (vowels.includes(c)) hasVowel = true;
+      else if (c >= 'a' && c <= 'z') hasConsonant = true;
+      if (hasVowel && hasConsonant) return true;
+    }
+    return false;
+  }
+
+  // Ajoute l'effet pour le solver à la fin du jeu
+  useEffect(() => {
+    console.log('Solver useEffect triggered, countdown:', countdown);
+    console.log('Pre-computed words available:', preComputedWords.length);
+    
+    if (countdown === 0 && preComputedWords.length > 0) {
+      console.log('🎯 Game ended - displaying pre-computed solver results');
+      console.log('*** Pre-computed solver words:', preComputedWords);
+      console.log('*** Setting showSolver to true');
+      setSolverWords(preComputedWords);
+      setShowSolver(true);
+    } else if (countdown === 0 && preComputedWords.length === 0) {
+      console.log('⚠️ Game ended but no pre-computed words available - solver still computing or failed');
+      // Fallback: show computing message or empty results
+      setSolverWords(['Computing...']);
+      setShowSolver(true);
+    } else {
+      console.log('Solver conditions not met or resetting');
+      setShowSolver(false);
+    }
+  }, [countdown, preComputedWords]);
 
 
   function MyComponent() {
@@ -421,7 +540,7 @@ export default function GameWords() {
             console.log("matches");
             console.log(matches);
             console.log(matches.length);
-            if(matches.length > 0 && matches != ''){
+            if(matches.length > 0){
                 setSuccessWords(prev => [...prev, completeWord[0]]);
                 setScore(prev => prev + calcWordScore(completeWord[0]));
                 const newMesh = (
@@ -481,7 +600,7 @@ export default function GameWords() {
   const sendLetter = (letter, positionX) => {
     console.log('click send 1 '+letter)
     setWordSended(wordSended => [...wordSended, letter])
-    console.log(wordSended)
+    // console.log(wordSended)
     console.log(wordSended.length)
 
     const newMesh = (
@@ -557,7 +676,6 @@ export default function GameWords() {
   //   };
   // }, []);
 
-    const [hovered, setHovered] = useState(false)
     useEffect(() => {
       document.body.style.cursor = hovered ? 'pointer' : 'auto'
     }, [hovered])
@@ -570,11 +688,100 @@ export default function GameWords() {
       setCubeText([]);
       setWordSended([]);
       setPositionX(5);
+      setShowSolver(false);
     };
 
-    // Ajoute une fonction pour recevoir le temps restant depuis CountDown
-    const handleCountdownChange = (time: number) => {
-      setCountdown(time);
+    const handleCountdownChange = (newCountdown: number) => {
+      setCountdown(newCountdown);
+    };
+
+    const testSolver = () => {
+      console.log("🧪 Testing solver with current letters");
+      console.log("Consonants:", consonants);
+      console.log("Voyels:", voyels);
+      console.log("Pre-computed words available:", preComputedWords.length);
+      console.log("Solver computing:", solverComputing);
+      
+      if (preComputedWords.length > 0) {
+        console.log("📋 Using pre-computed results for test:");
+        console.log("Pre-computed words:", preComputedWords);
+        setSolverWords(preComputedWords);
+        setShowSolver(true);
+      } else if (solverComputing) {
+        console.log("⏳ Solver is still computing in background...");
+        setSolverWords(['Computing...']);
+        setShowSolver(true);
+      } else {
+        console.log("⚠️ No pre-computed results available and not computing - starting fresh computation");
+        // Force trigger solver for testing if no pre-computed results
+        if (consonants.length > 0 || voyels.length > 0) {
+          const scrambledLetters = [...consonants, ...voyels];
+          console.log("Available letters:", scrambledLetters);
+          
+          const wordsArray = memoizedData;
+          console.log("First 20 words:", wordsArray.slice(0, 20)); // Log first 20 words
+          console.log("Total words in dictionary:", wordsArray.length);
+
+          /* This codeblock gets all the words that contains the letters */
+          const matchedWords = wordsArray.filter((word) => {
+            // First check if word has more than 4 letters
+            if (word.length <= 4) {
+              return false;
+            }
+
+            // Parse each letter in the word and verify if it exists in scrambledLetters
+            for (let i = 0; i < word.length; i++) {
+              const letter = word[i];
+              console.log(`Checking if letter "${letter}" from word "${word}" is in scrambledLetters`);
+              
+              if (!scrambledLetters.includes(letter)) {
+                console.log(`✗ Letter "${letter}" not found in scrambledLetters`);
+                return false; // If any letter is not in scrambledLetters, word doesn't match
+              }
+            }
+            
+            console.log(`✓ Word "${word}" - all letters found in scrambledLetters`);
+            return true; // All letters in word are in scrambledLetters
+          });
+          console.log("Matched words (contains letters):", matchedWords.length);
+
+          /* This codeblock gets the exact word(s) that can be built with the letters */
+          const validLengthWords = matchedWords.filter(
+            (word) => word.length > 4 && word.length <= scrambledLetters.length
+          );
+          console.log("Valid length words (>4 chars):", validLengthWords.length);
+
+          let possibleMatches: string[] = [];
+
+          validLengthWords.forEach((dicWord) => {
+            let foundLetters: string[] = [];
+            let scrambledLettersCopy = scrambledLetters.slice();
+
+            [...dicWord].forEach((dicWordLetter) => {
+              for (let i = 0; i < scrambledLettersCopy.length; i++) {
+                if (dicWordLetter === scrambledLettersCopy[i]) {
+                  foundLetters.push(dicWordLetter);
+                  scrambledLettersCopy.splice(i, 1);
+                  break;
+                }
+              }
+            });
+
+            if (foundLetters.length === dicWord.length) {
+              const foundWord = foundLetters.join('');
+              
+              if (hasVowelAndConsonant(foundWord) && foundWord === dicWord) {
+                possibleMatches.push(foundWord);
+              }
+            }
+          });
+
+          const uniqueWords = [...new Set(possibleMatches)].slice(0, 10);
+          console.log("Final solver words:", uniqueWords);
+          setSolverWords(uniqueWords);
+          setShowSolver(true);
+        }
+      }
     };
 
     return (
@@ -622,7 +829,7 @@ export default function GameWords() {
 
         {consonants.map((voyel, _idx) => {
           // console.log(voyel)
-          console.log(wordSended)
+          // console.log(wordSended)
           return (
             <Text
               key={`consonant-${_idx}`}
@@ -640,7 +847,7 @@ export default function GameWords() {
         })}
         {voyels.map((voyel, _idx) => {
           // console.log(voyel)
-          console.log(wordSended)
+          // console.log(wordSended)
           return (
             <Text
               key={`vowel-${_idx}`}
@@ -703,6 +910,20 @@ export default function GameWords() {
                 <meshStandardMaterial color={"lightsteelblue"} />
               </mesh>
             </group>
+            <group position={[2, 2, 0]} onClick={(e) => testSolver()}>
+              <Text
+                rotation={[0, Math.PI, 0]}
+                position={[0, 1, 0]}
+                color="black"
+                fontSize={0.5}
+              >
+                Test Solver
+              </Text>
+              <mesh receiveShadow castShadow>
+                <boxGeometry args={[0.5, 0.5, 0.5]} />
+                <meshStandardMaterial color={"orange"} />
+              </mesh>
+            </group>
 
       <CountDown onRestart={handleRestart} onTimeChange={handleCountdownChange} />
       <group position={[6, 6, 0]} rotation={[0, Math.PI, 0]}>
@@ -760,6 +981,37 @@ export default function GameWords() {
           </group>
         );
       })}
+      {/* Affiche le billboard solver à la fin du jeu */}
+      {showSolver && (
+        <group position={[0, 3, 0]} rotation={[0, Math.PI, 0]}>
+          <mesh position={[0, 0, -0.1]}>
+            <planeGeometry args={[12, 6]} />
+            <meshStandardMaterial color="#fffde7" />
+          </mesh>
+          <Text
+            position={[0, 2.5, 0]}
+            fontSize={0.7}
+            color="#1a237e"
+            anchorX="center"
+            anchorY="middle"
+            fontWeight="bold"
+          >
+            Unscramble Solver
+          </Text>
+          {solverWords.map((w, i) => (
+            <Text
+              key={w + i}
+              position={[-5 + (i % 2) * 5, 1.2 - Math.floor(i / 2) * 1.2, 0]}
+              fontSize={0.6}
+              color="#222"
+              anchorX="center"
+              anchorY="middle"
+            >
+              {w}
+            </Text>
+          ))}
+        </group>
+      )}
       </group>
 );
   
@@ -776,10 +1028,3 @@ function calcWordScore(word: string) {
   }
   return s;
 }
-
-// Ajoute la fonction resetCountdown si elle n'est pas déjà présente dans ce fichier
-const resetCountdown = () => {
-  setScore(0);
-  setSuccessWords([]);
-  // ...autres resets si besoin...
-};
