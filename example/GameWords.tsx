@@ -999,7 +999,7 @@ export default function GameWords() {
       })}
       {/* Affiche le billboard solver à la fin du jeu */}
       {showSolver && (
-        <group position={[0, 3, 0]} rotation={[0, Math.PI, 0]}>
+        <group position={[0, 12, 0]} rotation={[0, Math.PI, 0]}>
           <mesh position={[0, 0, -0.1]}>
             <planeGeometry args={[12, 6]} />
             <meshStandardMaterial color="#fffde7" />
@@ -1017,7 +1017,7 @@ export default function GameWords() {
           {solverWords.map((w, i) => (
             <Text
               key={w + i}
-              position={[-5 + (i % 2) * 5, 1.2 - Math.floor(i / 2) * 1.2, 0]}
+              position={[-2.5 + (i % 2) * 5, 1.5 - Math.floor(i / 2) * 0.8, 0]}
               fontSize={0.6}
               color="#222"
               anchorX="center"
